@@ -40,6 +40,7 @@ function bindGlobal() {
   window.addEventListener('hashchange',route);window.addEventListener('online',updateNetwork);window.addEventListener('offline',updateNetwork);
   document.addEventListener('click',handleAccountMenuClick);
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!$('#account-menu').hidden)closeAccountMenu(true)});
+  $('#account-refresh').addEventListener('click',()=>window.location.reload());
   $('#account-theme').addEventListener('click',()=>{toggleTheme();closeAccountMenu()});
   $('#account-logout').addEventListener('click',()=>{const returnTarget=accountMenuTrigger;closeAccountMenu();requestLogout(returnTarget)});
   $('#logout-cancel').addEventListener('click',()=>$('#logout-dialog').close('cancel'));

@@ -21,12 +21,22 @@ class AppStore {
   constructor() {
     this.state = blankState('anonymous');
     this.listeners = new Set();
+    this.persistLocally = true;
   }
 
   key(uid = this.state.uid) { return `ela_state_${uid}`; }
 
-  load(uid, profile = null) {
+  readLocal(uid) {
     const raw = localStorage.getItem(this.key(uid));
+    if (!raw) return null;
+    try { return { ...blankState(uid), ...JSON.parse(raw), uid }; } catch { return null; }
+  }
+
+  clearLocal(uid = this.state.uid) { localStorage.removeItem(this.key(uid)); }
+
+  load(uid, profile = null, { persistLocally = true } = {}) {
+    this.persistLocally = persistLocally;
+    const raw = persistLocally ? localStorage.getItem(this.key(uid)) : null;
     let next = blankState(uid);
     if (raw) {
       try { next = { ...next, ...JSON.parse(raw), uid }; } catch { /* reset malformed local state */ }
@@ -40,13 +50,10 @@ class AppStore {
 
   mergeRemote(remote) {
     if (!remote) return;
-    const localUpdated = Date.parse(this.state.updatedAt || 0);
-    const remoteUpdated = Date.parse(remote.updatedAt || 0);
-    if (!this.state.currentPlanId || remoteUpdated > localUpdated) {
-      const safeRemote = Object.fromEntries(Object.entries(remote).filter(([,value]) => value !== undefined));
-      this.state = { ...blankState(this.state.uid), ...this.state, ...safeRemote, uid: this.state.uid, profile: this.state.profile };
-      this.persist();
-    }
+    const safeRemote = Object.fromEntries(Object.entries(remote).filter(([,value]) => value !== undefined));
+    this.state = { ...blankState(this.state.uid), ...safeRemote, uid: this.state.uid, profile: this.state.profile };
+    document.documentElement.dataset.theme = this.state.settings?.theme || 'light';
+    this.persist();
   }
 
   update(mutator) {
@@ -56,7 +63,8 @@ class AppStore {
   }
 
   persist(notify = true) {
-    localStorage.setItem(this.key(), JSON.stringify(this.state));
+    if (this.persistLocally) localStorage.setItem(this.key(), JSON.stringify(this.state));
+    else this.clearLocal();
     if (notify) this.listeners.forEach(fn => fn(this.state));
   }
 
@@ -95,8 +103,7 @@ class AppStore {
       const index = state.attempts.findIndex(item => item.id === attempt.id);
       if (index >= 0) state.attempts[index] = attempt; else state.attempts.push(attempt);
       const day = state.studyDays[date] || { date, activityIds: [], completedSessionIds: [], totalMinutes: 0 };
-      if (!day.completedSessionIds.includes(sessionId)) day.completedSessionIds.push(sessionId);
-      day.totalMinutes += minutes;
+      if (!day.completedSessionIds.includes(sessionId)) { day.completedSessionIds.push(sessionId); day.totalMinutes += minutes; }
       day.updatedAt = now;
       state.studyDays[date] = day;
     });

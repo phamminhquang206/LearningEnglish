@@ -16,7 +16,7 @@ class FirebaseService {
     const app = initializeApp(FIREBASE_CONFIG);
     this.auth = authMod.getAuth(app);
     await authMod.setPersistence(this.auth, authMod.browserLocalPersistence);
-    this.db = fs.initializeFirestore(app, { localCache: fs.persistentLocalCache({ tabManager: fs.persistentMultipleTabManager() }) });
+    this.db = fs.initializeFirestore(app, { localCache: fs.memoryLocalCache() });
     authMod.onAuthStateChanged(this.auth, user => { this.user = user; this.notify(user); });
     try {
       await authMod.getRedirectResult(this.auth);
@@ -68,6 +68,20 @@ class FirebaseService {
   async saveSpeaking(uid, session) { return this.set(uid, 'speakingSessions', session.id, session); }
   async saveSettings(uid, settings) { return this.set(uid, 'settings', 'app', settings); }
 
+  async migrateLocalState(user, state) {
+    if (this.demo || !this.db || !state) return;
+    const writes = [
+      ...Object.values(state.plans || {}).map(plan => this.savePlan(user.uid, plan)),
+      ...(state.attempts || []).map(attempt => this.saveAttempt(user.uid, attempt)),
+      ...Object.values(state.reviewItems || {}).map(review => this.saveReview(user.uid, review)),
+      ...Object.values(state.studyDays || {}).map(day => this.saveStudyDay(user.uid, day)),
+      ...(state.speakingSessions || []).map(session => this.saveSpeaking(user.uid, session)),
+      this.saveSettings(user.uid, state.settings || {})
+    ];
+    await Promise.all(writes);
+    await this.upsertProfile(user, !!state.onboardingComplete, state.currentPlanId || null);
+  }
+
   async set(uid, collectionName, id, data) {
     if (this.demo || !this.db) return;
     const { doc, setDoc } = this.modules.fs;
@@ -76,10 +90,10 @@ class FirebaseService {
 
   async loadUserData(uid) {
     if (this.demo || !this.db) return null;
-    const { doc, getDoc, collection, getDocs } = this.modules.fs;
+    const { doc, getDocFromServer, collection, getDocsFromServer } = this.modules.fs;
     const [profileSnap, plansSnap, attemptsSnap, reviewsSnap, daysSnap, speakingSnap, settingsSnap] = await Promise.all([
-      getDoc(doc(this.db,'users',uid)), getDocs(collection(this.db,'users',uid,'plans')), getDocs(collection(this.db,'users',uid,'attempts')),
-      getDocs(collection(this.db,'users',uid,'reviewItems')), getDocs(collection(this.db,'users',uid,'studyDays')), getDocs(collection(this.db,'users',uid,'speakingSessions')), getDoc(doc(this.db,'users',uid,'settings','app'))
+      getDocFromServer(doc(this.db,'users',uid)), getDocsFromServer(collection(this.db,'users',uid,'plans')), getDocsFromServer(collection(this.db,'users',uid,'attempts')),
+      getDocsFromServer(collection(this.db,'users',uid,'reviewItems')), getDocsFromServer(collection(this.db,'users',uid,'studyDays')), getDocsFromServer(collection(this.db,'users',uid,'speakingSessions')), getDocFromServer(doc(this.db,'users',uid,'settings','app'))
     ]);
     const plans = Object.fromEntries(plansSnap.docs.map(d => [d.id,deserializePlanFromFirestore(d.data())]));
     const reviewItems = Object.fromEntries(reviewsSnap.docs.map(d => [d.id,d.data()]));
@@ -93,6 +107,10 @@ export const firebaseService = new FirebaseService();
 
 export function chooseAuthFlow() {
   return 'popup';
+}
+
+export function hasCloudLearningData(state) {
+  return !!(state?.currentPlanId || state?.onboardingComplete || Object.keys(state?.plans || {}).length || (state?.attempts || []).length);
 }
 
 function normalizeAuthError(error) {

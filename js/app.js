@@ -1,8 +1,8 @@
-import { firebaseService } from './services/firebase.js?v=5';
+import { firebaseService, hasCloudLearningData } from './services/firebase.js?v=6';
 import { geminiService } from './services/gemini.js?v=2';
 import { LiveSpeakingService } from './services/live-speaking.js?v=2';
 import { initPwaInstall, refreshPwaInstall } from './services/pwa-install.js?v=1';
-import { store } from './core/store.js';
+import { store } from './core/store.js?v=2';
 import { scoreDiagnostic, createPlan, adaptNextWeek, masteryBySkill, calculateStreak } from './core/plan-engine.js?v=3';
 
 const $ = (selector, root=document) => root.querySelector(selector);
@@ -11,7 +11,7 @@ const html = (value='') => String(value).replace(/[&<>'"]/g, char => ({'&':'&amp
 const today = () => new Date().toISOString().slice(0,10);
 const skillLabels = { vocabulary:'Từ vựng',grammar:'Ngữ pháp',reading:'Reading',writing:'Writing',listening:'Listening',speaking:'Speaking',mixed:'Tổng hợp' };
 const reasonLabels = { CURRICULUM_CORE:'Nội dung cốt lõi',SELF_REPORTED_WEAK:'Kỹ năng bạn muốn cải thiện',DIAGNOSTIC_GAP:'Khoảng trống từ bài đầu vào',LOW_MASTERY:'Cần củng cố theo kết quả',MISSED_SESSIONS:'Bài chưa hoàn thành',WEEKLY_REBALANCE:'Điều chỉnh cuối tuần' };
-let curriculum, diagnostic, currentUser, currentStep=1, liveService=null, activityStartedAt=0, accountMenuTrigger=null, logoutReturnTarget=null;
+let curriculum, diagnostic, currentUser, currentStep=1, liveService=null, activityStartedAt=0, accountMenuTrigger=null, logoutReturnTarget=null, cloudSyncPromise=null, lastCloudSyncAt=0;
 
 function toast(message) {
   const node=document.createElement('div');node.className='toast';node.textContent=message;$('#toast-region').append(node);setTimeout(()=>node.remove(),4200);
@@ -37,7 +37,7 @@ function bindGlobal() {
   $('#step-next').onclick=nextStep;$('#step-back').onclick=previousStep;$('#onboarding-form').onsubmit=submitOnboarding;
   $('[name="daysPerWeek"]').addEventListener('input',e=>$('#days-output').value=`${e.target.value} ngày`);
   $$('[name="track"]').forEach(input=>input.addEventListener('change',updateTrackFields));
-  window.addEventListener('hashchange',route);window.addEventListener('online',updateNetwork);window.addEventListener('offline',updateNetwork);
+  window.addEventListener('hashchange',route);window.addEventListener('online',()=>{updateNetwork();syncCloudState(true)});window.addEventListener('offline',updateNetwork);
   document.addEventListener('click',handleAccountMenuClick);
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!$('#account-menu').hidden)closeAccountMenu(true)});
   $('#account-refresh').addEventListener('click',()=>window.location.reload());
@@ -46,22 +46,42 @@ function bindGlobal() {
   $('#logout-cancel').addEventListener('click',()=>$('#logout-dialog').close('cancel'));
   $('#logout-confirm').addEventListener('click',confirmLogout);
   $('#logout-dialog').addEventListener('close',()=>{logoutReturnTarget?.focus();logoutReturnTarget=null});
-  window.addEventListener('beforeunload',()=>liveService?.stop());document.addEventListener('visibilitychange',()=>{if(document.hidden&&liveService)liveService.stopMicrophone()});
+  window.addEventListener('beforeunload',()=>liveService?.stop());document.addEventListener('visibilitychange',()=>{if(document.hidden&&liveService)liveService.stopMicrophone();else if(!document.hidden)syncCloudState(true)});
 }
 
 function setLoginBusy(value){$('#google-login-btn').disabled=value;$('#google-login-btn').lastChild.textContent=value?' Đang đăng nhập...':' Tiếp tục với Google';}
 function showAuthError(message){$('#auth-error').hidden=false;$('#auth-error').textContent=message;}
 function updateNetwork(){const offline=!navigator.onLine;$('#network-banner').hidden=!offline;document.body.classList.toggle('is-offline',offline);}
+function requireCloudConnection(){if(firebaseService.demo||navigator.onLine)return true;toast('Cần kết nối Internet để lưu dữ liệu học lên Firestore.');return false;}
 
 async function handleAuth(user) {
   currentUser=user;
-  $('#auth-screen').hidden=!!user;
-  if(!user){$('#onboarding-screen').hidden=true;$('#app-shell').hidden=true;return;}
-  store.load(user.uid,{displayName:user.displayName||'Học viên',email:user.email||'',photoURL:user.photoURL||''});
-  if(!firebaseService.demo){try{const remote=await firebaseService.loadUserData(user.uid);store.mergeRemote(remote);if(store.activePlan)await firebaseService.savePlan(user.uid,store.activePlan)}catch(error){toast(`Đồng bộ chưa hoàn tất: ${error.message}`)}}
+  if(!user){$('#auth-screen').hidden=false;$('#onboarding-screen').hidden=true;$('#app-shell').hidden=true;return;}
+  $('#auth-error').hidden=true;
+  const profile={displayName:user.displayName||'Học viên',email:user.email||'',photoURL:user.photoURL||''};
+  const legacyLocal=firebaseService.demo?null:store.readLocal(user.uid);
+  store.load(user.uid,profile,{persistLocally:firebaseService.demo});
+  if(!firebaseService.demo){
+    try{
+      let remote=await firebaseService.loadUserData(user.uid);
+      if(!hasCloudLearningData(remote)&&hasCloudLearningData(legacyLocal)){
+        await firebaseService.migrateLocalState(user,legacyLocal);
+        remote=await firebaseService.loadUserData(user.uid);
+        toast('Đã chuyển dữ liệu học cũ lên Firestore.');
+      }
+      store.mergeRemote(remote);store.clearLocal(user.uid);lastCloudSyncAt=Date.now();
+    }catch(error){showAuthError(`Không thể tải dữ liệu học từ Firestore. Hãy kiểm tra mạng rồi tải lại trang. ${error.message}`);$('#auth-screen').hidden=false;$('#onboarding-screen').hidden=true;$('#app-shell').hidden=true;return;}
+  }
   await firebaseService.upsertProfile(user,store.state.onboardingComplete,store.state.currentPlanId).catch(()=>{});
+  $('#auth-screen').hidden=true;
   renderProfile();
   if(store.state.onboardingComplete&&store.activePlan)showApp();else showOnboarding();
+}
+
+function syncCloudState(refreshView=false){
+  if(firebaseService.demo||!currentUser||!navigator.onLine||cloudSyncPromise||Date.now()-lastCloudSyncAt<15000)return cloudSyncPromise;
+  cloudSyncPromise=firebaseService.loadUserData(currentUser.uid).then(remote=>{store.mergeRemote(remote);lastCloudSyncAt=Date.now();if(refreshView&&!$('#app-shell').hidden&&!location.hash.startsWith('#/activity/')){renderProfile();route()}}).catch(error=>toast(`Không thể đồng bộ dữ liệu mới: ${error.message}`)).finally(()=>{cloudSyncPromise=null});
+  return cloudSyncPromise;
 }
 
 function showOnboarding(){currentStep=1;$('#onboarding-screen').hidden=false;$('#app-shell').hidden=true;renderStep();}
@@ -86,8 +106,8 @@ function nextStep(){if(!validateStep())return;currentStep=Math.min(4,currentStep
 function previousStep(){currentStep=Math.max(1,currentStep-1);renderStep();window.scrollTo({top:0});}
 
 async function submitOnboarding(event) {
-  event.preventDefault();if(!validateStep())return;const button=$('#create-plan');button.disabled=true;button.textContent='Đang tạo lộ trình...';
-  try { const formData=new FormData(event.currentTarget),result=scoreDiagnostic(diagnostic,formData),plan=createPlan({formData,diagnostic:result,curriculum});store.setPlan(plan);await Promise.all([firebaseService.savePlan(currentUser.uid,plan),firebaseService.upsertProfile(currentUser,true,plan.id)]);toast(`Đã tạo lộ trình ${plan.track==='ielts'?'IELTS':'Giao tiếp'} phù hợp mức ${result.inferredLevel}.`);showApp(); }
+  event.preventDefault();if(!validateStep()||!requireCloudConnection())return;const button=$('#create-plan');button.disabled=true;button.textContent='Đang tạo lộ trình...';
+  try { const formData=new FormData(event.currentTarget),result=scoreDiagnostic(diagnostic,formData),plan=createPlan({formData,diagnostic:result,curriculum});await Promise.all([firebaseService.savePlan(currentUser.uid,plan),firebaseService.upsertProfile(currentUser,true,plan.id)]);store.setPlan(plan);toast(`Đã tạo lộ trình ${plan.track==='ielts'?'IELTS':'Giao tiếp'} phù hợp mức ${result.inferredLevel}.`);showApp(); }
   catch(error){showFormError(error.message)}finally{button.disabled=false;button.textContent='Tạo lộ trình của tôi';}
 }
 
@@ -123,7 +143,7 @@ function sessionCard(session){if(!session)return `<div class="card empty-state">
 function renderRoadmap() {
   const plan=store.activePlan,done=store.completedIds,weekOneDone=plan.sessions.filter(s=>s.week===1).every(s=>done.has(s.id));
   $('#main-content').innerHTML=`<div class="page">${pageHeader('Lộ trình 2 tuần',`${plan.track==='ielts'?'IELTS':'Giao tiếp'} · ${plan.schedule.daysPerWeek} ngày/tuần · ${plan.schedule.minutesPerDay} phút/ngày`,weekOneDone&&!plan.adaptations.length?'<button id="adapt-plan" class="btn btn-primary">Điều chỉnh tuần 2</button>':'')}<div class="inline-alert info">Lộ trình dùng curriculum đã kiểm duyệt. Các nhãn bên dưới giải thích vì sao một phiên được chọn cho bạn.</div><div class="timeline">${[1,2].map(week=>`<section class="timeline-week"><div class="timeline-week-title"><strong>Tuần ${week}</strong></div>${planSessions().filter(s=>s.week===week).map(s=>timelineItem(s,done)).join('')}</section>`).join('')}</div>${plan.adaptations.length?adaptationCard(plan.adaptations.at(-1)):''}</div>`;
-  $('#adapt-plan')?.addEventListener('click',async()=>{const adaptation=adaptNextWeek(plan,store.state.attempts);store.update(s=>{s.plans[plan.id]=plan});await firebaseService.savePlan(currentUser.uid,plan);toast(`Đã ưu tiên: ${adaptation.prioritySkills.map(s=>skillLabels[s]||s).join(', ')||'duy trì cân bằng'}.`);renderRoadmap();});
+  $('#adapt-plan')?.addEventListener('click',async()=>{if(!requireCloudConnection())return;const adaptation=adaptNextWeek(plan,store.state.attempts);store.update(s=>{s.plans[plan.id]=plan});await firebaseService.savePlan(currentUser.uid,plan);toast(`Đã ưu tiên: ${adaptation.prioritySkills.map(s=>skillLabels[s]||s).join(', ')||'duy trì cân bằng'}.`);renderRoadmap();});
 }
 function timelineItem(session,done){const isDone=done.has(session.id),current=nextSession()?.id===session.id;return `<article class="timeline-item ${isDone?'done':''} ${current?'current':''}"><span class="timeline-number">${isDone?icon('check'):session.order}</span><div class="timeline-main"><h3>${html(session.title)}</h3><p>${session.minutes} phút · ${(session.reasonCodes||[]).map(c=>reasonLabels[c]).filter(Boolean).join(' · ')}</p></div><a class="timeline-action" href="#/activity/${session.id}">${isDone?'Học lại':current?'Học ngay':'Xem'}</a></article>`}
 function adaptationCard(a){return `<section class="card lesson-card" style="margin-top:24px"><span class="skill-tag">Điều chỉnh tuần ${a.week}</span><h2 style="margin-top:12px">Kế hoạch đã học từ kết quả của bạn</h2><p class="muted">Ưu tiên: ${a.prioritySkills.map(s=>skillLabels[s]||s).join(', ')||'giữ nhịp cân bằng'}. ${a.missedSessionIds.length?`${a.missedSessionIds.length} phiên chưa hoàn thành được giữ lại.`:'Không có phiên bị bỏ lỡ.'}</p></section>`}
@@ -131,7 +151,7 @@ function adaptationCard(a){return `<section class="card lesson-card" style="marg
 function renderReview() {
   const items=Object.values(store.state.reviewItems).sort((a,b)=>a.nextReviewAt.localeCompare(b.nextReviewAt));
   $('#main-content').innerHTML=`<div class="page">${pageHeader('Ôn tập','Những điểm chưa vững sẽ quay lại theo nhịp 1–3–7 ngày.')}<div class="review-list">${items.length?items.map(item=>`<article class="card review-item"><div><span class="skill-tag">${skillLabels[item.skill]||item.skill}</span><h3>${html(item.prompt)}</h3><p>Lần ôn ${item.intervalIndex+1} · ${item.nextReviewAt<=today()?'Đến hạn hôm nay':`Tiếp theo ${item.nextReviewAt}`}</p><div class="mastery-bar"><span style="width:${Math.round(item.mastery*100)}%"></span></div></div><button class="btn btn-secondary review-now" data-id="${item.id}" ${item.nextReviewAt>today()?'disabled':''}>${item.nextReviewAt<=today()?'Đã ôn':'Chưa đến hạn'}</button></article>`).join(''):`<div class="empty-state"><h2>Chưa có mục cần ôn</h2><p>Lỗi sai từ bài học sẽ tự động xuất hiện tại đây.</p><a class="btn btn-primary" href="#/today">Học phiên tiếp theo</a></div>`}</div></div>`;
-  $$('.review-now').forEach(button=>button.addEventListener('click',async()=>{const item=store.state.reviewItems[button.dataset.id];item.intervalIndex=Math.min(2,item.intervalIndex+1);const days=[1,3,7][item.intervalIndex];const date=new Date();date.setDate(date.getDate()+days);item.nextReviewAt=date.toISOString().slice(0,10);item.mastery=Math.min(1,item.mastery+.18);store.update(()=>{});await firebaseService.saveReview(currentUser.uid,item);toast('Đã ghi nhận lượt ôn.');renderReview();}));
+  $$('.review-now').forEach(button=>button.addEventListener('click',async()=>{if(!requireCloudConnection())return;const item={...store.state.reviewItems[button.dataset.id]};item.intervalIndex=Math.min(2,item.intervalIndex+1);const days=[1,3,7][item.intervalIndex];const date=new Date();date.setDate(date.getDate()+days);item.nextReviewAt=date.toISOString().slice(0,10);item.mastery=Math.min(1,item.mastery+.18);try{await firebaseService.saveReview(currentUser.uid,item);store.update(state=>{state.reviewItems[item.id]=item});toast('Đã ghi nhận lượt ôn.');renderReview()}catch(error){toast(`Chưa lưu được lượt ôn: ${error.message}`)}}));
 }
 
 function renderProgress() {
@@ -144,14 +164,14 @@ function lastSevenDays(){const fmt=new Intl.DateTimeFormat('vi',{weekday:'short'
 
 function renderSettings() {
   const settings=store.state.settings,keyPresent=!!geminiService.key;
-  $('#main-content').innerHTML=`<div class="page">${pageHeader('Cài đặt','Quản lý giao diện, AI và tài khoản trên thiết bị này.')}<div class="settings-grid"><section class="card settings-section"><h2>Giao diện và học tập</h2><div class="setting-row"><div class="setting-copy"><strong>Chế độ tối</strong><small>Đồng bộ cài đặt giao diện lên tài khoản.</small></div><label class="switch"><input id="theme-switch" type="checkbox" ${settings.theme==='dark'?'checked':''}><span></span></label></div><div class="setting-row"><div class="setting-copy"><strong>Lịch hiện tại</strong><small>${store.activePlan.schedule.daysPerWeek} ngày/tuần · ${store.activePlan.schedule.minutesPerDay} phút/ngày</small></div><button id="new-goal" class="btn btn-secondary">Đổi mục tiêu</button></div></section><section class="card settings-section"><h2>Cài ứng dụng</h2><div class="setting-row"><div class="setting-copy"><strong>English Assistant trên màn hình chính</strong><small>Mở trong cửa sổ riêng và tiếp tục dùng nội dung đã tải khi mất mạng.</small></div><button class="btn btn-secondary" type="button" data-pwa-install>Cài đặt</button></div></section><section class="card settings-section"><h2>Gemini AI trên thiết bị</h2><p class="muted">Key không được gửi lên Firestore. Nếu bật ghi nhớ, key nằm trong localStorage của trình duyệt này.</p><div class="api-form"><input id="api-key" type="password" autocomplete="off" placeholder="Dán Gemini API key" value="${keyPresent?'••••••••••••':''}" aria-label="Gemini API key"><button id="load-models" class="btn btn-secondary">Tải model</button></div><label class="setting-row"><div class="setting-copy"><strong>Ghi nhớ trên thiết bị này</strong><small>Chỉ bật trên thiết bị cá nhân.</small></div><span class="switch"><input id="remember-key" type="checkbox" ${!!localStorage.getItem('ela_gemini_key')?'checked':''}><span></span></span></label><div class="model-row"><select id="model-select" aria-label="Gemini model"><option value="${html(geminiService.model)}">${geminiService.model?html(geminiService.model):'Tải danh sách model để chọn'}</option></select><button id="save-ai" class="btn btn-primary">Lưu AI</button></div><p id="ai-status" class="form-hint">${keyPresent?'API key đã được cấu hình trên thiết bị.':'Writing và speaking feedback cần API key.'}</p></section><section class="card settings-section"><h2>Tài khoản</h2><div class="setting-row"><div class="setting-copy"><strong>${html(store.state.profile.displayName)}</strong><small>${html(store.state.profile.email)}</small></div><button id="logout" class="btn btn-danger">${icon('logout')} Đăng xuất</button></div></section></div></div>`;
+  $('#main-content').innerHTML=`<div class="page">${pageHeader('Cài đặt','Quản lý giao diện, AI và tài khoản trên thiết bị này.')}<div class="settings-grid"><section class="card settings-section"><h2>Giao diện và học tập</h2><div class="setting-row"><div class="setting-copy"><strong>Chế độ tối</strong><small>Đồng bộ cài đặt giao diện lên tài khoản.</small></div><label class="switch"><input id="theme-switch" type="checkbox" ${settings.theme==='dark'?'checked':''}><span></span></label></div><div class="setting-row"><div class="setting-copy"><strong>Lịch hiện tại</strong><small>${store.activePlan.schedule.daysPerWeek} ngày/tuần · ${store.activePlan.schedule.minutesPerDay} phút/ngày</small></div><button id="new-goal" class="btn btn-secondary">Đổi mục tiêu</button></div></section><section class="card settings-section"><h2>Cài ứng dụng</h2><div class="setting-row"><div class="setting-copy"><strong>English Assistant trên màn hình chính</strong><small>Mở trong cửa sổ riêng; cần Internet để tải và lưu tiến độ.</small></div><button class="btn btn-secondary" type="button" data-pwa-install>Cài đặt</button></div></section><section class="card settings-section"><h2>Gemini AI trên thiết bị</h2><p class="muted">Key không được gửi lên Firestore. Nếu bật ghi nhớ, key nằm trong localStorage của trình duyệt này.</p><div class="api-form"><input id="api-key" type="password" autocomplete="off" placeholder="Dán Gemini API key" value="${keyPresent?'••••••••••••':''}" aria-label="Gemini API key"><button id="load-models" class="btn btn-secondary">Tải model</button></div><label class="setting-row"><div class="setting-copy"><strong>Ghi nhớ trên thiết bị này</strong><small>Chỉ bật trên thiết bị cá nhân.</small></div><span class="switch"><input id="remember-key" type="checkbox" ${!!localStorage.getItem('ela_gemini_key')?'checked':''}><span></span></span></label><div class="model-row"><select id="model-select" aria-label="Gemini model"><option value="${html(geminiService.model)}">${geminiService.model?html(geminiService.model):'Tải danh sách model để chọn'}</option></select><button id="save-ai" class="btn btn-primary">Lưu AI</button></div><p id="ai-status" class="form-hint">${keyPresent?'API key đã được cấu hình trên thiết bị.':'Writing và speaking feedback cần API key.'}</p></section><section class="card settings-section"><h2>Tài khoản</h2><div class="setting-row"><div class="setting-copy"><strong>${html(store.state.profile.displayName)}</strong><small>${html(store.state.profile.email)}</small></div><button id="logout" class="btn btn-danger">${icon('logout')} Đăng xuất</button></div></section></div></div>`;
   refreshPwaInstall();
   $('#theme-switch').addEventListener('change',toggleTheme);$('#logout').addEventListener('click',event=>requestLogout(event.currentTarget));$('#new-goal').addEventListener('click',newGoal);$('#load-models').addEventListener('click',loadModels);$('#save-ai').addEventListener('click',saveAiSettings);
 }
 function toggleTheme(){const theme=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=theme;store.update(s=>s.settings.theme=theme);firebaseService.saveSettings(currentUser.uid,store.state.settings).catch(()=>{});renderAccountTheme();}
 async function loadModels(){const keyInput=$('#api-key').value.trim(),key=keyInput&&!keyInput.startsWith('••')?keyInput:geminiService.key,status=$('#ai-status'),button=$('#load-models');button.disabled=true;status.textContent='Đang tải model...';try{const models=await geminiService.listModels(key);$('#model-select').innerHTML=models.map(m=>`<option value="${html(m.id)}" ${m.id===geminiService.model?'selected':''}>${html(m.name)}</option>`).join('');status.textContent=`Đã tìm thấy ${models.length} model hỗ trợ generateContent.`;if(keyInput&&!keyInput.startsWith('••'))$('#api-key').dataset.pendingKey=keyInput}catch(error){status.textContent=error.message}finally{button.disabled=false}}
 function saveAiSettings(){const input=$('#api-key'),pending=input.dataset.pendingKey||(!input.value.startsWith('••')?input.value:'')||geminiService.key,model=$('#model-select').value;if(!pending||!model){$('#ai-status').textContent='Hãy nhập key, tải và chọn model.';return}geminiService.configure(pending,$('#remember-key').checked,model);$('#ai-status').textContent='Đã lưu cấu hình AI trên thiết bị này.';toast('Đã cập nhật Gemini.');}
-async function newGoal(){if(!confirm('Lộ trình hiện tại sẽ được lưu vào lịch sử và bạn sẽ tạo lộ trình mới. Tiếp tục?'))return;store.update(s=>{s.onboardingComplete=false;s.currentPlanId=null});await firebaseService.upsertProfile(currentUser,false,null);$('#app-shell').hidden=true;showOnboarding();}
+async function newGoal(){if(!requireCloudConnection()||!confirm('Lộ trình hiện tại sẽ được lưu vào lịch sử và bạn sẽ tạo lộ trình mới. Tiếp tục?'))return;try{await firebaseService.upsertProfile(currentUser,false,null);store.update(s=>{s.onboardingComplete=false;s.currentPlanId=null});$('#app-shell').hidden=true;showOnboarding()}catch(error){toast(`Chưa thể đổi mục tiêu: ${error.message}`)}}
 
 function renderActivity(sessionId) {
   const session=planSessions().find(s=>s.id===sessionId);if(!session){location.hash='#/today';return}activityStartedAt=Date.now();renderActivityStep(session,0,[]);
@@ -178,6 +198,7 @@ function normalize(value){return String(value).trim().toLowerCase().replace(/[�
 function speakText(text){speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(text);utterance.lang='en-US';utterance.rate=.9;speechSynthesis.speak(utterance)}
 
 async function finishActivity(session,index,results,result) {
+  if(!requireCloudConnection())return;
   const a=session.activities[index],attempt=buildAttempt(session,a,result);results.push(attempt);store.recordAttempt(attempt);await firebaseService.saveAttempt(currentUser.uid,attempt).catch(()=>{});if(attempt.reviewItem)firebaseService.saveReview(currentUser.uid,attempt.reviewItem).catch(()=>{});
   if(index<session.activities.length-1){renderActivityStep(session,index+1,results);return}
   const completion=store.completeSession(session.id,Math.max(1,Math.round((Date.now()-activityStartedAt)/60000)));await firebaseService.saveAttempt(currentUser.uid,completion).catch(()=>{});const day=store.state.studyDays[today()];firebaseService.saveStudyDay(currentUser.uid,day).catch(()=>{});

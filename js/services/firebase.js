@@ -1,4 +1,4 @@
-import { FIREBASE_CONFIG, isFirebaseConfigured } from '../config.js?v=2';
+import { FIREBASE_CONFIG, isFirebaseConfigured } from '../config.js?v=3';
 
 const SDK = 'https://www.gstatic.com/firebasejs/12.4.0';
 class FirebaseService {
@@ -15,8 +15,14 @@ class FirebaseService {
     this.modules = { authMod, fs };
     const app = initializeApp(FIREBASE_CONFIG);
     this.auth = authMod.getAuth(app);
+    await authMod.setPersistence(this.auth, authMod.browserLocalPersistence);
     this.db = fs.initializeFirestore(app, { localCache: fs.persistentLocalCache({ tabManager: fs.persistentMultipleTabManager() }) });
     authMod.onAuthStateChanged(this.auth, user => { this.user = user; this.notify(user); });
+    try {
+      await authMod.getRedirectResult(this.auth);
+    } catch (error) {
+      throw normalizeAuthError(error);
+    }
     this.ready = true;
     return true;
   }
@@ -29,8 +35,19 @@ class FirebaseService {
     const { GoogleAuthProvider, signInWithPopup, signInWithRedirect } = this.modules.authMod;
     const provider = new GoogleAuthProvider(); provider.setCustomParameters({ prompt: 'select_account' });
     const mobile = matchMedia('(max-width: 700px)').matches || /Android|iPhone|iPad/i.test(navigator.userAgent);
-    if (mobile) return signInWithRedirect(this.auth, provider);
-    return signInWithPopup(this.auth, provider);
+    const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    const authFlow = chooseAuthFlow({ userAgent: navigator.userAgent, mobile, standalone });
+    try {
+      // Samsung Internet commonly partitions the redirect helper's storage.
+      // Popup keeps the Firebase credential exchange in the initiating origin.
+      if (authFlow === 'popup') return await signInWithPopup(this.auth, provider);
+      return await signInWithRedirect(this.auth, provider);
+    } catch (error) {
+      if (authFlow === 'popup' && mobile && ['auth/popup-blocked','auth/operation-not-supported-in-this-environment'].includes(error.code)) {
+        return signInWithRedirect(this.auth, provider);
+      }
+      throw normalizeAuthError(error);
+    }
   }
 
   loginDemo() {
@@ -80,6 +97,23 @@ class FirebaseService {
 }
 
 export const firebaseService = new FirebaseService();
+
+export function chooseAuthFlow({ userAgent = '', mobile = false, standalone = false } = {}) {
+  return /SamsungBrowser/i.test(userAgent) || standalone || !mobile ? 'popup' : 'redirect';
+}
+
+function normalizeAuthError(error) {
+  const messages = {
+    'auth/unauthorized-domain': 'Domain hiện tại chưa được thêm vào Firebase Authentication > Authorized domains.',
+    'auth/popup-blocked': 'Trình duyệt đã chặn cửa sổ đăng nhập. Hãy cho phép pop-up cho trang này rồi thử lại.',
+    'auth/popup-closed-by-user': 'Cửa sổ đăng nhập đã được đóng trước khi hoàn tất.',
+    'auth/web-storage-unsupported': 'Trình duyệt đang chặn storage cần cho đăng nhập. Hãy cho phép cookie/site data cho trang này.',
+    'auth/operation-not-supported-in-this-environment': 'Trình duyệt hiện tại không hỗ trợ cách đăng nhập này.'
+  };
+  const normalized = new Error(messages[error?.code] || error?.message || 'Không thể hoàn tất đăng nhập Google.');
+  normalized.code = error?.code || 'auth/unknown';
+  return normalized;
+}
 
 export function serializePlanForFirestore(plan) {
   const sessions = Object.fromEntries((plan.sessions || []).map(session => {

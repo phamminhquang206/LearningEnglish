@@ -33,6 +33,8 @@ Manifest sử dụng icon PNG 192px, 512px, maskable 512px và Apple touch icon 
 
 Ứng dụng dùng Google redirect trên mobile, popup trên desktop và Firestore persistent multi-tab cache. Rules chỉ cho người dùng truy cập subtree của chính `uid`.
 
+Samsung Internet và PWA standalone dùng popup để tránh mất kết quả đăng nhập do storage cross-origin. Khi deploy trên `*.web.app` hoặc custom domain, `authDomain` tự dùng hostname hiện tại. Hãy thêm URI `https://<domain-của-app>/__/auth/handler` vào OAuth 2.0 Web Client > **Authorized redirect URIs** trong Google Cloud Console.
+
 ## Gemini
 
 Vào **Cài đặt**, nhập Gemini API key của chính người dùng, tải danh sách model và chọn model. Key mặc định chỉ giữ trong session; chỉ được đưa vào `localStorage` khi bật **Ghi nhớ trên thiết bị này**. Key không được ghi lên Firestore.

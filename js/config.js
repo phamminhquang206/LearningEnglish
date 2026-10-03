@@ -1,6 +1,11 @@
+const runtimeHostname = typeof location === 'undefined' ? '' : location.hostname;
+const localHosts = new Set(['', 'localhost', '127.0.0.1']);
+
 export const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAvSPEg_2i8Y-wv8cLfTvBvT7gmEHe05Ow",
-  authDomain: "englishlearning-c745e.firebaseapp.com",
+  // Firebase redirect helpers must share the deployed Hosting origin on
+  // browsers that partition third-party storage (Samsung Internet included).
+  authDomain: localHosts.has(runtimeHostname) ? "englishlearning-c745e.firebaseapp.com" : runtimeHostname,
   projectId: "englishlearning-c745e",
   storageBucket: "englishlearning-c745e.firebasestorage.app",
   messagingSenderId: "687230136261",

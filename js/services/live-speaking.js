@@ -26,21 +26,23 @@ export class LiveSpeakingService extends EventTarget {
   openSocket() {
     return new Promise((resolve,reject)=>{
       const socket=new WebSocket(`${GEMINI_LIVE_URL}?key=${encodeURIComponent(this.apiKey)}`);this.socket=socket;
+      let ready=false;
       const timeout=setTimeout(()=>{socket.close();reject(new Error('Hết thời gian kết nối Gemini Live.'));},15000);
       socket.onopen=()=>{
         const setup={ setup:{ model:this.model, generationConfig:{responseModalities:['AUDIO'],speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:'Kore'}}}},systemInstruction:{parts:[{text:`${this.scenario} Respond in English. Keep each turn under 35 words. Do not reveal reasoning.`}]},inputAudioTranscription:{},outputAudioTranscription:{},realtimeInputConfig:{activityHandling:'START_OF_ACTIVITY_INTERRUPTS'},sessionResumption:{} } };
         if(this.sessionHandle) setup.setup.sessionResumption={handle:this.sessionHandle};
         socket.send(JSON.stringify(setup));
       };
-      socket.onmessage=event=>this.handleMessage(event.data,()=>{clearTimeout(timeout);resolve();});
+      socket.onmessage=event=>this.handleMessage(event.data,()=>{ready=true;clearTimeout(timeout);resolve();},error=>{clearTimeout(timeout);this.emit('error',{message:error.message});if(socket.readyState<2)socket.close(1000,'Unsupported Live configuration');if(!ready)reject(error)});
       socket.onerror=()=>{clearTimeout(timeout);reject(new Error('Không thể mở kết nối Gemini Live.'));};
-      socket.onclose=event=>{clearTimeout(timeout);this.emit('status',{state:'closed',message:event.reason||'Kết nối đã đóng.'});if(this.active&&this.reconnects<2)this.reconnect();};
+      socket.onclose=event=>{clearTimeout(timeout);const message=event.reason||'Kết nối Gemini Live đã đóng.';this.emit('status',{state:'closed',message});if(!ready)reject(new Error(message));else if(this.active&&this.reconnects<2)this.reconnect();};
     });
   }
 
-  handleMessage(raw,onReady=()=>{}) {
-    if(raw instanceof Blob){raw.text().then(text=>this.handleMessage(text,onReady));return;}
+  handleMessage(raw,onReady=()=>{},onFailure=()=>{}) {
+    if(raw instanceof Blob){raw.text().then(text=>this.handleMessage(text,onReady,onFailure));return;}
     let data;try{data=JSON.parse(raw)}catch{return;}
+    if(data.error){onFailure(new Error(data.error.message||'Gemini Live từ chối cấu hình phiên.'));return;}
     if(data.setupComplete){this.active=true;this.emit('status',{state:'ready',message:'Sẵn sàng trò chuyện'});this.timer=setTimeout(()=>this.stop(),10*60*1000);onReady();return;}
     if(data.sessionResumptionUpdate?.newHandle)this.sessionHandle=data.sessionResumptionUpdate.newHandle;
     if(data.goAway){this.emit('status',{state:'reconnecting',message:'Đang nối lại phiên...'});return;}

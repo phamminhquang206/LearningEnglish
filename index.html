@@ -12,7 +12,7 @@
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" href="./assets/icon.svg?v=2" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./assets/icon-180.png?v=2">
-  <link rel="stylesheet" href="./css/app.css?v=5">
+  <link rel="stylesheet" href="./css/app.css?v=7">
 </head>
 <body>
   <a class="skip-link" href="#main-content">Đi tới nội dung chính</a>
@@ -83,6 +83,28 @@
             <label class="field"><span>Trình độ tự đánh giá</span>
               <select name="level" required><option value="">Chọn trình độ</option><option>A1 — Mới bắt đầu</option><option>A2 — Cơ bản</option><option>B1 — Trung cấp</option><option>B2 — Trên trung cấp</option></select>
             </label>
+            <label class="field"><span>Ngành nghề hiện tại</span>
+              <select id="industry-select" name="industry" required>
+                <option value="">Chọn ngành nghề</option>
+                <option value="accounting_audit">Kế toán / Kiểm toán</option>
+                <option value="embedded_automotive">Embedded / Automotive</option>
+                <option value="software_it">Phần mềm / Công nghệ thông tin</option>
+                <option value="finance_banking">Tài chính / Ngân hàng</option>
+                <option value="engineering_manufacturing">Kỹ thuật / Sản xuất</option>
+                <option value="sales_marketing">Kinh doanh / Marketing</option>
+                <option value="healthcare">Y tế / Chăm sóc sức khỏe</option>
+                <option value="education">Giáo dục</option>
+                <option value="student">Sinh viên / Chưa đi làm</option>
+                <option value="other">Ngành khác</option>
+              </select>
+              <small class="form-hint">Mỗi tuần app sẽ ưu tiên một nhóm từ và tình huống thuộc ngành này.</small>
+            </label>
+            <label id="custom-industry-field" class="field" hidden><span>Tên ngành của bạn</span>
+              <input id="custom-industry" name="customIndustry" type="text" maxlength="80" placeholder="Ví dụ: Logistics, Kiến trúc">
+            </label>
+            <label class="field"><span>Vai trò hoặc mảng cụ thể <small>(không bắt buộc)</small></span>
+              <input name="jobRole" type="text" maxlength="80" placeholder="Ví dụ: Kiểm toán nội bộ, AUTOSAR developer">
+            </label>
             <fieldset class="field full"><legend>Kỹ năng bạn thấy yếu nhất</legend>
               <div class="chip-checks">
                 <label><input type="checkbox" name="weakSkills" value="vocabulary"><span>Vocabulary</span></label>
@@ -134,6 +156,7 @@
       <nav class="primary-nav" aria-label="Điều hướng chính">
         <a href="#/today" data-route="today"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 11 12 3l9 8v9a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-9Z"/></svg><span>Hôm nay</span></a>
         <a href="#/roadmap" data-route="roadmap"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 3v16M19 5v16M5 5c4-4 10 4 14 0M5 17c4-4 10 4 14 0"/></svg><span>Lộ trình</span></a>
+        <a href="#/ai-coach" data-route="ai-coach"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v8Z"/><path d="m9 8 .7 2.3L12 11l-2.3.7L9 14l-.7-2.3L6 11l2.3-.7L9 8ZM16 7v4M14 9h4"/></svg><span>AI Coach</span></a>
         <a href="#/review" data-route="review"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7L20 8"/><path d="M20 3v5h-5"/></svg><span>Ôn tập</span><span id="review-badge" class="nav-badge" hidden>0</span></a>
         <a href="#/progress" data-route="progress"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20V7"/></svg><span>Tiến độ</span></a>
       </nav>
@@ -148,6 +171,7 @@
     <nav class="bottom-nav" aria-label="Điều hướng di động">
       <a href="#/today" data-route="today"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 11 12 3l9 8v9a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-9Z"/></svg><span>Hôm nay</span></a>
       <a href="#/roadmap" data-route="roadmap"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 3v16M19 5v16M5 5c4-4 10 4 14 0M5 17c4-4 10 4 14 0"/></svg><span>Lộ trình</span></a>
+      <a href="#/ai-coach" data-route="ai-coach"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v8Z"/><path d="m9 8 .7 2.3L12 11l-2.3.7L9 14l-.7-2.3L6 11l2.3-.7L9 8ZM16 7v4M14 9h4"/></svg><span>AI</span></a>
       <a href="#/review" data-route="review"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7L20 8"/><path d="M20 3v5h-5"/></svg><span>Ôn tập</span></a>
       <a href="#/progress" data-route="progress"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20V7"/></svg><span>Tiến độ</span></a>
     </nav>
@@ -188,6 +212,6 @@
   </dialog>
 
   <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
-  <script type="module" src="./js/app.js?v=19"></script>
+  <script type="module" src="./js/app.js?v=23"></script>
 </body>
 </html>

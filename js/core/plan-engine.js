@@ -43,18 +43,32 @@ export function scoreDiagnostic(questions, formData) {
   return { correct, total: questions.length, percentage, inferredLevel, bySkill };
 }
 
-export function createPlan({ formData, diagnostic, curriculum }) {
+export function createPlan({ formData, diagnostic, curriculum, professions=[] }) {
   const track = formData.get('track');
   const weakSkills = formData.getAll('weakSkills');
+  const industryId=formData.get('industry')||'general';
+  const industry=professions.find(item=>item.id===industryId);
+  const customIndustry=String(formData.get('customIndustry')||'').trim();
+  const professionalProfile={
+    industryId,
+    industryLabel:industryId==='other'?(customIndustry||'Ngành khác'):(industry?.label||'Tiếng Anh công việc'),
+    vocabularyPackId:industry?.packId||industryId,
+    role:String(formData.get('jobRole')||'').trim()
+  };
   const totalWeeks=goalWeeks(track,formData.get('examDate'),curriculum.tracks[track]);
   const daysPerWeek=Number(formData.get('daysPerWeek')),selected=selectWeeklySessions(curriculum.tracks[track].filter(session=>session.week<=totalWeeks),track,weakSkills,daysPerWeek);
+  const professionSessionIds=new Set([...new Set(selected.map(session=>session.week))].map(week=>{
+    const weekSessions=selected.filter(session=>session.week===week);
+    return (weekSessions.find(session=>session.skill==='vocabulary')||weekSessions[0]).id;
+  }));
   const sessions = selected.map((session, index) => {
     const { activities: _curriculumActivities, ...assignment } = session;
     return {
       ...assignment,
       order: index + 1,
       status: index === 0 ? 'current' : 'upcoming',
-      reasonCodes: buildReasonCodes(session, weakSkills, diagnostic),
+      reasonCodes: [...buildReasonCodes(session, weakSkills, diagnostic),...(professionSessionIds.has(session.id)?['PROFESSIONAL_VOCABULARY']:[])],
+      professionalFocus:professionSessionIds.has(session.id),
       scheduledOffset: (session.week-1)*7+selected.filter(s=>s.week===session.week&&s.day<session.day).length
     };
   });
@@ -72,10 +86,26 @@ export function createPlan({ formData, diagnostic, curriculum }) {
       examDate: formData.get('examDate') || null
     } : { context: formData.get('context') || 'daily' },
     schedule: { daysPerWeek, minutesPerDay: Number(formData.get('minutesPerDay')), coreSessionsPerWeek:Math.min(5,daysPerWeek), reviewDaysPerWeek:Math.max(0,daysPerWeek-5) },
-    selfReportedLevel: formData.get('level'), weakSkills, diagnostic,
+    selfReportedLevel: formData.get('level'), weakSkills, diagnostic, professionalProfile,
     sessions, weekIndex: 1, totalWeeks, totalSessions:sessions.length, status: 'active', curriculumVersion: CURRICULUM_VERSION,
     adaptations: [], createdAt: now.toISOString(), updatedAt: now.toISOString()
   };
+}
+
+export function personalizeSession(session,plan,professions=[]){
+  if(!session?.professionalFocus||!session.activities?.length||!plan?.professionalProfile)return session;
+  const profile=plan.professionalProfile,packId=profile.vocabularyPackId||profile.industryId;
+  const industry=professions.find(item=>item.id===packId)||professions.find(item=>item.id==='general');
+  if(!industry?.terms?.length)return session;
+  const count=3,start=((Math.max(1,session.week)-1)*count)%industry.terms.length;
+  const terms=Array.from({length:count},(_,index)=>industry.terms[(start+index)%industry.terms.length]);
+  const roleContext=profile.role?` cho vai trò ${profile.role}`:'';
+  const activity={
+    id:`${session.id}-profession`,type:'flashcards',skill:'vocabulary',
+    title:`Từ vựng ${profile.industryLabel}`,
+    cards:terms.map(term=>[term.en,`${term.vi} · ${term.example}`])
+  };
+  return {...session,reason:`${session.reason} Có thêm từ vựng ${profile.industryLabel}${roleContext}.`,activities:[activity,...session.activities]};
 }
 
 function goalWeeks(track,examDate,sessions){const max=Math.max(...sessions.map(s=>s.week));if(track!=='ielts'||!examDate)return max;const remaining=Math.ceil((new Date(examDate)-new Date())/604800000);return Math.max(4,Math.min(max,Number.isFinite(remaining)?remaining:max));}
@@ -83,7 +113,8 @@ function selectWeeklySessions(sessions,track,weakSkills,daysPerWeek){const count
 
 export function upgradePlan(plan,curriculum){
   const source=curriculum.tracks[plan.track]||[],totalWeeks=plan.totalWeeks||goalWeeks(plan.track,plan.goal?.examDate,source),eligible=selectWeeklySessions(source.filter(s=>s.week<=totalWeeks),plan.track,plan.weakSkills||[],plan.schedule?.daysPerWeek||5),existing=new Set(plan.sessions.map(s=>s.id));let changed=false;
-  eligible.filter(s=>!existing.has(s.id)).forEach(session=>{const{activities:_activities,...assignment}=session,weekPosition=eligible.filter(s=>s.week===session.week&&s.day<session.day).length,offset=(session.week-1)*7+weekPosition;plan.sessions.push({...assignment,order:plan.sessions.length+1,status:'upcoming',reasonCodes:buildReasonCodes(session,plan.weakSkills||[],plan.diagnostic||{bySkill:{}}),scheduledOffset:offset,scheduledDate:addDays(plan.createdAt,offset)});changed=true});
+  const professionIds=new Set([...new Set(eligible.map(session=>session.week))].map(week=>{const weekSessions=eligible.filter(session=>session.week===week);return (weekSessions.find(session=>session.skill==='vocabulary')||weekSessions[0]).id;}));
+  eligible.filter(s=>!existing.has(s.id)).forEach(session=>{const{activities:_activities,...assignment}=session,weekPosition=eligible.filter(s=>s.week===session.week&&s.day<session.day).length,offset=(session.week-1)*7+weekPosition,professionalFocus=professionIds.has(session.id);plan.sessions.push({...assignment,order:plan.sessions.length+1,status:'upcoming',professionalFocus,reasonCodes:[...buildReasonCodes(session,plan.weakSkills||[],plan.diagnostic||{bySkill:{}}),...(professionalFocus&&plan.professionalProfile?['PROFESSIONAL_VOCABULARY']:[])],scheduledOffset:offset,scheduledDate:addDays(plan.createdAt,offset)});changed=true});
   plan.totalWeeks=totalWeeks;plan.totalSessions=plan.sessions.length;if(changed){plan.curriculumVersion=CURRICULUM_VERSION;plan.updatedAt=new Date().toISOString()}return changed;
 }
 function addDays(start,offset){const date=new Date(start||Date.now());date.setDate(date.getDate()+offset);return date.toISOString().slice(0,10)}

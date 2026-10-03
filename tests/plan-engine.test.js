@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { scoreDiagnostic, createPlan, adaptNextWeek, calculateStreak, extendCurriculum, upgradePlan } from '../js/core/plan-engine.js';
+import { scoreDiagnostic, createPlan, adaptNextWeek, calculateStreak, extendCurriculum, upgradePlan, personalizeSession } from '../js/core/plan-engine.js';
 import { serializePlanForFirestore, deserializePlanFromFirestore } from '../js/services/firebase.js';
 
 const baseCurriculum=JSON.parse(fs.readFileSync(new URL('../data/curriculum.json',import.meta.url)));
 const roadmap=JSON.parse(fs.readFileSync(new URL('../data/roadmap.json',import.meta.url)));
+const professions=JSON.parse(fs.readFileSync(new URL('../data/professions.json',import.meta.url))).industries;
 const curriculum=extendCurriculum(baseCurriculum,roadmap);
 const questions=JSON.parse(fs.readFileSync(new URL('../data/diagnostic.json',import.meta.url)));
 class FormDataFake { constructor(values){this.values=values} get(key){const value=this.values[key];return Array.isArray(value)?value[0]:value} getAll(key){const value=this.values[key];return value==null?[]:Array.isArray(value)?value:[value]} }
@@ -30,6 +31,19 @@ test('both tracks contain unique sessions across twelve weeks',()=>{
 test('weekly load follows the learner schedule',()=>{
   const form=new FormDataFake({track:'communication',level:'A2',weakSkills:['speaking'],daysPerWeek:'3',minutesPerDay:'25',context:'daily'}),plan=createPlan({formData:form,diagnostic:{percentage:45,inferredLevel:'A2',bySkill:{}},curriculum});
   assert.equal(plan.sessions.length,36);assert.equal(plan.schedule.coreSessionsPerWeek,3);assert.equal(plan.sessions.filter(s=>s.week===6).length,3);
+});
+
+test('profession profile adds relevant vocabulary to one selected session per week',()=>{
+  const form=new FormDataFake({track:'communication',level:'A2',weakSkills:['speaking'],industry:'embedded_automotive',jobRole:'AUTOSAR developer',daysPerWeek:'3',minutesPerDay:'25',context:'work'});
+  const plan=createPlan({formData:form,diagnostic:{percentage:45,inferredLevel:'A2',bySkill:{}},curriculum,professions});
+  assert.equal(plan.professionalProfile.industryLabel,'Embedded / Automotive');
+  assert.equal(plan.sessions.filter(session=>session.professionalFocus).length,12);
+  const assignment=plan.sessions.find(session=>session.week===1&&session.professionalFocus);
+  const source=curriculum.tracks.communication.find(session=>session.id===assignment.id);
+  const personalized=personalizeSession({...source,...assignment},plan,professions);
+  assert.equal(personalized.activities[0].title,'Từ vựng Embedded / Automotive');
+  assert.match(personalized.activities[0].cards[0][0],/electronic control unit/i);
+  assert.ok(assignment.reasonCodes.includes('PROFESSIONAL_VOCABULARY'));
 });
 
 test('legacy two-week plan upgrades without replacing completed session ids',()=>{

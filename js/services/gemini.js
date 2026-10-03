@@ -27,7 +27,10 @@ class GeminiService {
     const response = await fetch(`${GEMINI_API_BASE}/models?pageSize=200&key=${encodeURIComponent(key)}`);
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(this.mapError(response.status, data.error?.message));
-    return (data.models || []).filter(model => (model.supportedGenerationMethods || []).includes('bidiGenerateContent'));
+    return (data.models || [])
+      .filter(model => (model.supportedGenerationMethods || []).includes('bidiGenerateContent'))
+      .filter(model => !/(transcrib|translate)/i.test(`${model.name} ${model.displayName||''} ${model.description||''}`))
+      .sort((a,b)=>liveConversationScore(b)-liveConversationScore(a));
   }
 
   async evaluate({ type, prompt, answer, transcript = '' }) {
@@ -43,6 +46,30 @@ class GeminiService {
       } catch (error) { lastError = error; }
     }
     throw lastError;
+  }
+
+  async chat({ messages, learnerContext='' }) {
+    if (!this.key || !this.model) throw new Error('Hãy cấu hình Gemini API key và model trong Cài đặt.');
+    const contents=(messages||[]).slice(-16).filter(item=>item?.text).map(item=>({role:item.role==='model'?'model':'user',parts:[{text:String(item.text)}]}));
+    if(!contents.length)throw new Error('Hãy nhập nội dung muốn trò chuyện.');
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),45000);
+    try{
+      const response=await fetch(`${GEMINI_API_BASE}/models/${encodeURIComponent(this.model)}:generateContent?key=${encodeURIComponent(this.key)}`,{
+        method:'POST',headers:{'Content-Type':'application/json'},signal:controller.signal,
+        body:JSON.stringify({
+          systemInstruction:{parts:[{text:`You are a friendly English coach for a Vietnamese learner. Keep the conversation mainly in English, use clear natural language, and keep each reply under 120 words. Correct only the most useful mistake after answering, with a short Vietnamese explanation when helpful. Ask at most one follow-up question. Learner context: ${learnerContext||'general English learner'}.`}]},
+          contents,generationConfig:{temperature:.65,maxOutputTokens:800}
+        })
+      });
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(this.mapError(response.status,data.error?.message));
+      const text=data.candidates?.[0]?.content?.parts?.map(part=>part.text||'').join('').trim();
+      if(!text)throw new Error('Gemini không trả về nội dung.');
+      return text;
+    }catch(error){
+      if(error.name==='AbortError')throw new Error('Gemini phản hồi quá lâu. Hãy thử lại.');
+      throw error;
+    }finally{clearTimeout(timer)}
   }
 
   async generateJson(text) {
@@ -77,5 +104,7 @@ class GeminiService {
     return message || `Không thể kết nối Gemini (HTTP ${status}).`;
   }
 }
+
+function liveConversationScore(model){const text=`${model.name} ${model.displayName||''} ${model.description||''}`.toLowerCase();return (text.includes('native audio')?6:0)+(text.includes('native-audio')?6:0)+(text.includes('flash live')?4:0)+(text.includes('-live')?2:0)+(text.includes('audio generation')?2:0)}
 
 export const geminiService = new GeminiService();

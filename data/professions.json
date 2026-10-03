@@ -1,0 +1,169 @@
+{
+  "version": "2026.10-professions.1",
+  "industries": [
+    {
+      "id": "accounting_audit",
+      "label": "Kế toán / Kiểm toán",
+      "terms": [
+        {"en":"financial statement","vi":"báo cáo tài chính","example":"We are reviewing the financial statements."},
+        {"en":"accounts receivable","vi":"các khoản phải thu","example":"Accounts receivable increased this quarter."},
+        {"en":"accounts payable","vi":"các khoản phải trả","example":"The invoice is recorded in accounts payable."},
+        {"en":"audit evidence","vi":"bằng chứng kiểm toán","example":"We need sufficient audit evidence."},
+        {"en":"material misstatement","vi":"sai sót trọng yếu","example":"The test identified no material misstatement."},
+        {"en":"internal control","vi":"kiểm soát nội bộ","example":"This internal control requires two approvals."},
+        {"en":"reconcile","vi":"đối chiếu","example":"Please reconcile the bank balance."},
+        {"en":"accrual","vi":"khoản dồn tích","example":"The expense was recorded as an accrual."},
+        {"en":"provision","vi":"khoản dự phòng","example":"Management recognised a warranty provision."},
+        {"en":"substantive testing","vi":"thử nghiệm cơ bản","example":"Substantive testing covered major transactions."},
+        {"en":"going concern","vi":"khả năng hoạt động liên tục","example":"The auditor assessed the going concern assumption."},
+        {"en":"qualified opinion","vi":"ý kiến kiểm toán ngoại trừ","example":"The report included a qualified opinion."}
+      ]
+    },
+    {
+      "id": "embedded_automotive",
+      "label": "Embedded / Automotive",
+      "terms": [
+        {"en":"electronic control unit","vi":"bộ điều khiển điện tử","example":"The electronic control unit processes sensor data."},
+        {"en":"real-time constraint","vi":"ràng buộc thời gian thực","example":"The task must meet a real-time constraint."},
+        {"en":"interrupt handler","vi":"trình xử lý ngắt","example":"The interrupt handler should remain short."},
+        {"en":"diagnostic trouble code","vi":"mã lỗi chẩn đoán","example":"The ECU stored a diagnostic trouble code."},
+        {"en":"CAN bus","vi":"mạng truyền thông CAN","example":"The modules exchange messages over the CAN bus."},
+        {"en":"bootloader","vi":"bộ nạp khởi động","example":"The bootloader verifies the new firmware."},
+        {"en":"functional safety","vi":"an toàn chức năng","example":"Functional safety is required for this feature."},
+        {"en":"fault injection","vi":"chèn lỗi để kiểm thử","example":"We used fault injection to test recovery."},
+        {"en":"watchdog timer","vi":"bộ định thời giám sát","example":"The watchdog timer resets an unresponsive controller."},
+        {"en":"signal timeout","vi":"hết thời gian chờ tín hiệu","example":"A signal timeout triggered the fallback mode."},
+        {"en":"calibration data","vi":"dữ liệu hiệu chỉnh","example":"Calibration data is stored in flash memory."},
+        {"en":"hardware abstraction layer","vi":"lớp trừu tượng phần cứng","example":"The hardware abstraction layer isolates driver details."}
+      ]
+    },
+    {
+      "id": "software_it",
+      "label": "Phần mềm / Công nghệ thông tin",
+      "terms": [
+        {"en":"deployment pipeline","vi":"quy trình triển khai","example":"The deployment pipeline runs automated tests."},
+        {"en":"source code repository","vi":"kho mã nguồn","example":"Push the change to the source code repository."},
+        {"en":"regression bug","vi":"lỗi hồi quy","example":"The release introduced a regression bug."},
+        {"en":"acceptance criteria","vi":"tiêu chí nghiệm thu","example":"The feature meets all acceptance criteria."},
+        {"en":"technical debt","vi":"nợ kỹ thuật","example":"We should reduce technical debt this sprint."},
+        {"en":"scalability","vi":"khả năng mở rộng","example":"The team is testing the service's scalability."},
+        {"en":"root cause","vi":"nguyên nhân gốc","example":"We identified the root cause of the outage."},
+        {"en":"backward compatible","vi":"tương thích ngược","example":"The new API remains backward compatible."},
+        {"en":"code review","vi":"rà soát mã nguồn","example":"The pull request is ready for code review."},
+        {"en":"edge case","vi":"trường hợp biên","example":"This test covers an important edge case."},
+        {"en":"rate limit","vi":"giới hạn tần suất","example":"The client exceeded the API rate limit."},
+        {"en":"rollback","vi":"quay lại phiên bản trước","example":"We performed a rollback after the failed release."}
+      ]
+    },
+    {
+      "id": "finance_banking",
+      "label": "Tài chính / Ngân hàng",
+      "terms": [
+        {"en":"interest rate","vi":"lãi suất","example":"The central bank kept the interest rate unchanged."},
+        {"en":"credit risk","vi":"rủi ro tín dụng","example":"The bank monitors credit risk closely."},
+        {"en":"cash flow","vi":"dòng tiền","example":"The project is expected to generate positive cash flow."},
+        {"en":"loan portfolio","vi":"danh mục cho vay","example":"The loan portfolio grew by eight percent."},
+        {"en":"collateral","vi":"tài sản bảo đảm","example":"The property is used as collateral."},
+        {"en":"liquidity","vi":"tính thanh khoản","example":"The company has sufficient liquidity."},
+        {"en":"default","vi":"vỡ nợ, không trả được nợ","example":"The model estimates the probability of default."},
+        {"en":"net interest margin","vi":"biên lãi ròng","example":"Net interest margin improved this quarter."},
+        {"en":"market volatility","vi":"biến động thị trường","example":"Market volatility affected the portfolio."},
+        {"en":"due diligence","vi":"thẩm định chuyên sâu","example":"The team completed financial due diligence."},
+        {"en":"asset allocation","vi":"phân bổ tài sản","example":"Asset allocation depends on the client's risk profile."},
+        {"en":"exchange rate","vi":"tỷ giá hối đoái","example":"The exchange rate moved against the exporter."}
+      ]
+    },
+    {
+      "id": "engineering_manufacturing",
+      "label": "Kỹ thuật / Sản xuất",
+      "terms": [
+        {"en":"production line","vi":"dây chuyền sản xuất","example":"The production line stopped for maintenance."},
+        {"en":"quality inspection","vi":"kiểm tra chất lượng","example":"Every batch undergoes a quality inspection."},
+        {"en":"tolerance","vi":"dung sai","example":"The dimension is within tolerance."},
+        {"en":"preventive maintenance","vi":"bảo trì phòng ngừa","example":"Preventive maintenance reduces downtime."},
+        {"en":"root cause analysis","vi":"phân tích nguyên nhân gốc","example":"We conducted a root cause analysis."},
+        {"en":"yield rate","vi":"tỷ lệ sản phẩm đạt","example":"The yield rate improved after calibration."},
+        {"en":"work instruction","vi":"hướng dẫn công việc","example":"Follow the latest work instruction."},
+        {"en":"non-conformance","vi":"sự không phù hợp","example":"The inspector reported a non-conformance."},
+        {"en":"lead time","vi":"thời gian từ đặt đến giao","example":"Supplier lead time is six weeks."},
+        {"en":"bottleneck","vi":"điểm nghẽn","example":"Packaging is the current bottleneck."},
+        {"en":"specification","vi":"thông số kỹ thuật","example":"The component meets the specification."},
+        {"en":"corrective action","vi":"hành động khắc phục","example":"The team proposed a corrective action."}
+      ]
+    },
+    {
+      "id": "sales_marketing",
+      "label": "Kinh doanh / Marketing",
+      "terms": [
+        {"en":"target audience","vi":"khách hàng mục tiêu","example":"The campaign targets a younger audience."},
+        {"en":"conversion rate","vi":"tỷ lệ chuyển đổi","example":"The landing page improved the conversion rate."},
+        {"en":"value proposition","vi":"tuyên bố giá trị","example":"Our value proposition focuses on convenience."},
+        {"en":"sales forecast","vi":"dự báo bán hàng","example":"The sales forecast was revised upward."},
+        {"en":"customer retention","vi":"giữ chân khách hàng","example":"The programme increased customer retention."},
+        {"en":"market segment","vi":"phân khúc thị trường","example":"This market segment is growing quickly."},
+        {"en":"qualified lead","vi":"khách hàng tiềm năng đủ điều kiện","example":"The webinar generated qualified leads."},
+        {"en":"brand awareness","vi":"nhận diện thương hiệu","example":"The campaign raised brand awareness."},
+        {"en":"competitive advantage","vi":"lợi thế cạnh tranh","example":"Fast delivery is our competitive advantage."},
+        {"en":"customer insight","vi":"hiểu biết về khách hàng","example":"The survey provided a useful customer insight."},
+        {"en":"pricing strategy","vi":"chiến lược giá","example":"We are reviewing the pricing strategy."},
+        {"en":"return on investment","vi":"tỷ suất hoàn vốn","example":"The campaign delivered a strong return on investment."}
+      ]
+    },
+    {
+      "id": "healthcare",
+      "label": "Y tế / Chăm sóc sức khỏe",
+      "terms": [
+        {"en":"medical history","vi":"tiền sử bệnh","example":"The nurse reviewed the patient's medical history."},
+        {"en":"adverse reaction","vi":"phản ứng bất lợi","example":"Report any adverse reaction immediately."},
+        {"en":"dosage","vi":"liều lượng","example":"The doctor adjusted the dosage."},
+        {"en":"follow-up appointment","vi":"lịch tái khám","example":"Please book a follow-up appointment."},
+        {"en":"vital signs","vi":"dấu hiệu sinh tồn","example":"The patient's vital signs are stable."},
+        {"en":"informed consent","vi":"đồng thuận sau khi được giải thích","example":"The patient gave informed consent."},
+        {"en":"symptom","vi":"triệu chứng","example":"When did the symptom first appear?"},
+        {"en":"treatment plan","vi":"kế hoạch điều trị","example":"We discussed the treatment plan with the family."},
+        {"en":"preventive care","vi":"chăm sóc phòng ngừa","example":"Vaccination is part of preventive care."},
+        {"en":"clinical assessment","vi":"đánh giá lâm sàng","example":"The clinical assessment took twenty minutes."},
+        {"en":"prescription","vi":"đơn thuốc","example":"The prescription is valid for one month."},
+        {"en":"discharge","vi":"cho xuất viện","example":"The patient is ready for discharge."}
+      ]
+    },
+    {
+      "id": "education",
+      "label": "Giáo dục",
+      "terms": [
+        {"en":"learning outcome","vi":"chuẩn đầu ra","example":"The activity supports the learning outcome."},
+        {"en":"assessment criteria","vi":"tiêu chí đánh giá","example":"Students received the assessment criteria."},
+        {"en":"lesson plan","vi":"giáo án","example":"The teacher revised the lesson plan."},
+        {"en":"student engagement","vi":"mức độ tham gia của học sinh","example":"Group work increased student engagement."},
+        {"en":"formative assessment","vi":"đánh giá quá trình","example":"The quiz is a formative assessment."},
+        {"en":"curriculum","vi":"chương trình học","example":"The school updated its curriculum."},
+        {"en":"learning objective","vi":"mục tiêu học tập","example":"State the learning objective clearly."},
+        {"en":"feedback","vi":"phản hồi","example":"Specific feedback helps learners improve."},
+        {"en":"differentiated instruction","vi":"dạy học phân hóa","example":"Differentiated instruction supports mixed abilities."},
+        {"en":"academic performance","vi":"kết quả học tập","example":"Attendance affects academic performance."},
+        {"en":"classroom management","vi":"quản lý lớp học","example":"Clear routines improve classroom management."},
+        {"en":"prerequisite","vi":"kiến thức tiên quyết","example":"Basic algebra is a prerequisite for this course."}
+      ]
+    },
+    {"id":"student","label":"Sinh viên / Chưa đi làm","packId":"general"},
+    {"id":"other","label":"Ngành khác","packId":"general"},
+    {
+      "id":"general",
+      "label":"Tiếng Anh công việc",
+      "terms":[
+        {"en":"deadline","vi":"hạn chót","example":"We need to meet the deadline."},
+        {"en":"priority","vi":"việc ưu tiên","example":"This request is our top priority."},
+        {"en":"stakeholder","vi":"bên liên quan","example":"The stakeholders approved the proposal."},
+        {"en":"workload","vi":"khối lượng công việc","example":"My workload is heavier this week."},
+        {"en":"follow up","vi":"theo dõi, liên hệ lại","example":"I will follow up by email."},
+        {"en":"clarify","vi":"làm rõ","example":"Could you clarify the requirement?"},
+        {"en":"schedule","vi":"lên lịch","example":"Let's schedule a short meeting."},
+        {"en":"progress update","vi":"cập nhật tiến độ","example":"I will send a progress update tomorrow."},
+        {"en":"responsibility","vi":"trách nhiệm","example":"This task is my responsibility."},
+        {"en":"approve","vi":"phê duyệt","example":"The manager approved the request."},
+        {"en":"issue","vi":"vấn đề","example":"We found an issue during testing."},
+        {"en":"solution","vi":"giải pháp","example":"The team proposed a practical solution."}
+      ]
+    }
+  ]
+}

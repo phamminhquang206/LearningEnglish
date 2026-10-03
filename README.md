@@ -12,6 +12,15 @@ npx serve -l 8085 .
 
 Mở `http://localhost:8085`. Khi Firebase chưa cấu hình, màn hình đăng nhập sẽ hiện nút **Dùng bản demo trên thiết bị** để kiểm tra toàn bộ learning loop cục bộ.
 
+## Cài PWA trên điện thoại
+
+- Production phải chạy qua HTTPS; Firebase Hosting đáp ứng điều kiện này.
+- Android/Chrome: nhấn **Cài ứng dụng trên thiết bị** để mở native install prompt. Nếu prompt chưa sẵn sàng, app hiển thị hướng dẫn cài từ menu trình duyệt.
+- iPhone/iPad: nhấn nút cài đặt để xem hướng dẫn **Chia sẻ → Thêm vào Màn hình chính → Thêm**.
+- Khi đã chạy ở chế độ standalone, các nút và banner cài đặt sẽ tự ẩn.
+
+Manifest sử dụng icon PNG 192px, 512px, maskable 512px và Apple touch icon 180px. Service worker phải đăng ký thành công trước khi trình duyệt đánh giá app là installable.
+
 ## Cấu hình Firebase
 
 1. Tạo một Firebase project mới và Web App.

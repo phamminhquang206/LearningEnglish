@@ -1,9 +1,9 @@
-const CACHE_VERSION = 'ela-shell-v8';
+const CACHE_VERSION = 'ela-shell-v10';
 const STATIC_CACHE = [
-  './','./index.html','./manifest.json','./css/app.css','./assets/icon.svg',
-  './data/curriculum.json','./data/diagnostic.json','./js/app.js?v=8','./js/config.js?v=2',
+  './','./index.html','./manifest.json','./css/app.css','./assets/icon.svg?v=2','./assets/icon-180.png?v=2','./assets/icon-192.png?v=2','./assets/icon-512.png?v=2','./assets/icon-maskable-512.png?v=2',
+  './data/curriculum.json','./data/diagnostic.json','./js/app.js?v=9','./js/config.js?v=2',
   './js/core/store.js','./js/core/plan-engine.js?v=3','./js/services/firebase.js?v=3',
-  './js/services/gemini.js?v=2','./js/services/live-speaking.js?v=2','./js/services/pcm-worklet.js'
+  './js/services/gemini.js?v=2','./js/services/live-speaking.js?v=2','./js/services/pwa-install.js?v=1','./js/services/pcm-worklet.js'
 ];
 
 self.addEventListener('install', event => {

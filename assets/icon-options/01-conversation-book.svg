@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
-  <title id="title">English Learning Assistant</title>
+  <title id="title">Conversation book app icon</title>
   <defs>
     <linearGradient id="bg" x1="72" y1="48" x2="448" y2="472" gradientUnits="userSpaceOnUse"><stop stop-color="#22c7b5"/><stop offset="1" stop-color="#08756c"/></linearGradient>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#054d48" flood-opacity=".28"/></filter>

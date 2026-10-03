@@ -4,10 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0f766e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="English AI">
   <meta name="description" content="Lộ trình học tiếng Anh cá nhân hoá cho IELTS và giao tiếp.">
   <title>English Learning Assistant</title>
   <link rel="manifest" href="./manifest.json">
-  <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="./assets/icon.svg?v=2" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./assets/icon-180.png?v=2">
   <link rel="stylesheet" href="./css/app.css">
 </head>
 <body>
@@ -30,6 +34,10 @@
       <button id="google-login-btn" class="btn btn-primary btn-wide" type="button">
         <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M21.8 12.2c0-.7-.1-1.5-.2-2.2H12v4.2h5.5a4.7 4.7 0 0 1-2 3.1V20h3.3c1.9-1.8 3-4.4 3-7.8Z"/><path d="M12 22c2.7 0 5-.9 6.8-2.4l-3.3-2.6c-.9.6-2.1 1-3.5 1a6 6 0 0 1-5.6-4.1H3v2.7A10 10 0 0 0 12 22Z"/><path d="M6.4 13.9A6 6 0 0 1 6 12c0-.7.1-1.3.3-1.9V7.4H3A10 10 0 0 0 2 12c0 1.6.4 3.2 1.1 4.6l3.3-2.7Z"/><path d="M12 6c1.6 0 3 .5 4.1 1.6l3.1-3.1A10 10 0 0 0 3 7.4l3.4 2.7A6 6 0 0 1 12 6Z"/></svg>
         Tiếp tục với Google
+      </button>
+      <button class="btn btn-secondary btn-wide" type="button" data-pwa-install>
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14"/></svg>
+        Cài ứng dụng trên thiết bị
       </button>
       <button id="demo-login-btn" class="btn btn-secondary btn-wide" type="button" hidden>Dùng bản demo trên thiết bị</button>
       <p id="auth-hint" class="form-hint">Dữ liệu học được bảo vệ theo tài khoản Firebase của bạn.</p>
@@ -130,11 +138,12 @@
         <a href="#/progress" data-route="progress"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20V7"/></svg><span>Tiến độ</span></a>
       </nav>
       <div class="sidebar-spacer"></div>
+      <button class="settings-link sidebar-install" type="button" data-pwa-install><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14"/></svg><span>Cài ứng dụng</span></button>
       <a class="settings-link" href="#/settings" data-route="settings"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></svg><span>Cài đặt</span></a>
       <div id="sidebar-profile" class="mini-profile"></div>
     </aside>
 
-    <header class="mobile-header"><a class="brand" href="#/today"><span class="logo-mark"><span>EA</span></span><span>English Assistant</span></a><button id="mobile-theme" class="icon-btn" aria-label="Đổi giao diện"></button></header>
+    <header class="mobile-header"><a class="brand" href="#/today"><span class="logo-mark"><span>EA</span></span><span>English Assistant</span></a><div class="header-tools"><button class="icon-btn" type="button" data-pwa-install aria-label="Cài ứng dụng"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14"/></svg></button><button id="mobile-theme" class="icon-btn" type="button" aria-label="Đổi giao diện"></button></div></header>
     <main id="main-content" class="main-content" tabindex="-1"></main>
     <nav class="bottom-nav" aria-label="Điều hướng di động">
       <a href="#/today" data-route="today"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 11 12 3l9 8v9a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-9Z"/></svg><span>Hôm nay</span></a>
@@ -144,7 +153,24 @@
     </nav>
   </div>
 
+  <section id="pwa-install-banner" class="pwa-install-banner" aria-label="Cài đặt ứng dụng" hidden>
+    <img src="./assets/icon-192.png?v=2" width="52" height="52" alt="">
+    <div><strong>Cài English Assistant</strong><p>Mở nhanh từ màn hình chính và dùng bài đã tải khi offline.</p></div>
+    <button class="btn btn-primary" type="button" data-pwa-install>Cài đặt</button>
+    <button class="pwa-dismiss" type="button" data-pwa-dismiss aria-label="Đóng gợi ý cài đặt"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+  </section>
+
+  <dialog id="pwa-install-dialog" class="pwa-dialog" aria-labelledby="pwa-guide-title">
+    <div class="pwa-dialog-head">
+      <div class="pwa-app-identity"><img src="./assets/icon-192.png?v=2" width="56" height="56" alt=""><div><span>ENGLISH ASSISTANT</span><h2 id="pwa-guide-title">Cài ứng dụng</h2></div></div>
+      <button class="icon-btn" type="button" data-pwa-close aria-label="Đóng hướng dẫn"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+    </div>
+    <p id="pwa-guide-intro" class="muted"></p>
+    <ol id="pwa-guide-steps" class="pwa-guide-steps"></ol>
+    <div class="pwa-dialog-actions"><button class="btn btn-primary" type="button" data-pwa-close>Đã hiểu</button></div>
+  </dialog>
+
   <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
-  <script type="module" src="./js/app.js?v=8"></script>
+  <script type="module" src="./js/app.js?v=9"></script>
 </body>
 </html>

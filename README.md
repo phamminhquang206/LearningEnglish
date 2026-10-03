@@ -1,0 +1,46 @@
+# English Learning Assistant
+
+PWA học tiếng Anh bằng HTML, CSS và JavaScript thuần. MVP có hai lộ trình 2 tuần: IELTS và giao tiếp cơ bản.
+
+## Chạy thử
+
+Ứng dụng cần chạy qua HTTP (không mở trực tiếp `file://`). Có thể dùng bất kỳ static server nào:
+
+```powershell
+npx serve -l 8085 .
+```
+
+Mở `http://localhost:8085`. Khi Firebase chưa cấu hình, màn hình đăng nhập sẽ hiện nút **Dùng bản demo trên thiết bị** để kiểm tra toàn bộ learning loop cục bộ.
+
+## Cấu hình Firebase
+
+1. Tạo một Firebase project mới và Web App.
+2. Bật Authentication > Google.
+3. Tạo Firestore Database.
+4. Thêm `localhost` và domain hosting vào Authorized domains.
+5. Thay placeholder trong `js/config.js` bằng Firebase Web config.
+6. Copy `.firebaserc.example` thành `.firebaserc`, thay project ID.
+7. Deploy rules trước khi dùng production: `firebase deploy --only firestore:rules`.
+
+Ứng dụng dùng Google redirect trên mobile, popup trên desktop và Firestore persistent multi-tab cache. Rules chỉ cho người dùng truy cập subtree của chính `uid`.
+
+## Gemini
+
+Vào **Cài đặt**, nhập Gemini API key của chính người dùng, tải danh sách model và chọn model. Key mặc định chỉ giữ trong session; chỉ được đưa vào `localStorage` khi bật **Ghi nhớ trên thiết bị này**. Key không được ghi lên Firestore.
+
+Writing/short answer dùng structured JSON feedback. Phiên speaking beta tìm model có capability `bidiGenerateContent`, stream PCM qua Gemini Live và chỉ lưu transcript/feedback, không lưu audio.
+
+## Kiểm thử
+
+```powershell
+npm test
+```
+
+Để kiểm thử Auth/Firestore rules, cài Firebase CLI theo cách bạn quản lý công cụ rồi chạy `firebase emulators:start`; cấu hình emulator đã có trong `firebase.json`.
+
+## Cấu trúc chính
+
+- `data/`: curriculum 20 phiên và diagnostic quiz.
+- `js/core/`: local store và plan/adaptation engine.
+- `js/services/`: Firebase, Gemini và realtime speaking.
+- `sw.js`: app-shell cache và offline fallback.

@@ -1,0 +1,10 @@
+{
+  "name": "english-learning-assistant",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "serve": "npx serve -l 8085 .",
+    "emulators": "firebase emulators:start"
+  }
+}

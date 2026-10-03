@@ -1,0 +1,154 @@
+{
+  "version": "2026.10-mvp.1",
+  "tracks": {
+    "ielts": [
+      {
+        "id":"ielts-01","week":1,"day":1,"title":"Academic vocabulary: Change & Trends","skill":"vocabulary","minutes":25,"level":"A2-B2","reason":"Xây nền từ vựng mô tả xu hướng cho Reading và Writing.",
+        "activities":[
+          {"id":"i01-a","type":"flashcards","title":"Từ vựng trọng tâm","cards":[["significant","đáng kể"],["gradual","dần dần"],["fluctuate","dao động"],["decline","suy giảm"]]},
+          {"id":"i01-b","type":"mcq","skill":"vocabulary","prompt":"The number of visitors showed a ___ increase from 2019 to 2022.","options":["significant","significance","significantly","signify"],"answer":0,"explanation":"Cần tính từ bổ nghĩa cho danh từ increase."},
+          {"id":"i01-c","type":"fill","skill":"vocabulary","prompt":"Sales rose ___ from 10 to 12 units. (gradual)","answer":"gradually","explanation":"Trạng từ gradually bổ nghĩa cho động từ rose."}
+        ]
+      },
+      {
+        "id":"ielts-02","week":1,"day":2,"title":"Grammar: Complex sentences","skill":"grammar","minutes":25,"level":"A2-B2","reason":"Tăng độ chính xác và đa dạng câu trong Writing.",
+        "activities":[
+          {"id":"i02-a","type":"mcq","skill":"grammar","prompt":"___ public transport is convenient, many people still prefer cars.","options":["Although","Because","Therefore","Unless"],"answer":0,"explanation":"Although diễn tả sự tương phản giữa hai mệnh đề."},
+          {"id":"i02-b","type":"reorder","skill":"grammar","prompt":"Sắp xếp thành câu đúng.","words":["While","online learning","is flexible",",","it requires","self-discipline","."],"answer":"While online learning is flexible, it requires self-discipline."},
+          {"id":"i02-c","type":"fill","skill":"grammar","prompt":"People exercise regularly ___ they want to stay healthy.","answer":"because","explanation":"Because giới thiệu nguyên nhân."}
+        ]
+      },
+      {
+        "id":"ielts-03","week":1,"day":3,"title":"Reading: Skimming for the main idea","skill":"reading","minutes":30,"level":"A2-B2","reason":"Rút ngắn thời gian tìm ý chính trong bài đọc.",
+        "activities":[
+          {"id":"i03-a","type":"reading","skill":"reading","passage":"Urban gardens are appearing on rooftops and unused plots across many cities. They provide fresh food, reduce summer heat, and create spaces where neighbours can meet. Although they cannot replace large farms, they can make cities healthier and more resilient.","prompt":"Ý chính của đoạn văn là gì?","options":["Cities should replace farms","Urban gardens bring several benefits","Rooftops are expensive","Neighbours dislike gardening"],"answer":1,"explanation":"Đoạn văn tập trung liệt kê lợi ích của urban gardens."},
+          {"id":"i03-b","type":"mcq","skill":"reading","prompt":"The word “resilient” is closest in meaning to:","options":["able to recover","very crowded","traditional","beautiful"],"answer":0,"explanation":"Resilient nghĩa là có khả năng phục hồi/thích nghi."}
+        ]
+      },
+      {
+        "id":"ielts-04","week":1,"day":4,"title":"Writing Task 1: Overview sentence","skill":"writing","minutes":30,"level":"B1-B2","reason":"Overview là phần quyết định Task Achievement trong Task 1.",
+        "activities":[
+          {"id":"i04-a","type":"mcq","skill":"writing","prompt":"Overview nào phù hợp nhất? Dữ liệu: car use tăng; bus use giảm; cycling ổn định.","options":["Cars were used by 42% in 2020.","Overall, car use rose while bus use fell, whereas cycling remained stable.","The chart is very interesting.","There are three transport types."],"answer":1,"explanation":"Overview cần tóm tắt xu hướng chính, không sa vào số liệu chi tiết."},
+          {"id":"i04-b","type":"writing","skill":"writing","title":"Viết overview","prompt":"Viết 35–55 từ tóm tắt: renewable energy tăng từ 20% lên 48%; coal giảm từ 55% xuống 30%; gas gần như không đổi. Không cần nêu mọi con số.","minWords":35,"rubric":"taskAchievement,coherence,lexicalResource,grammar"}
+        ]
+      },
+      {
+        "id":"ielts-05","week":1,"day":5,"title":"Week 1 checkpoint","skill":"mixed","minutes":25,"level":"A2-B2","reason":"Củng cố lỗi trong tuần trước khi mở nội dung mới.",
+        "activities":[
+          {"id":"i05-a","type":"mcq","skill":"vocabulary","prompt":"Which verb means ‘to go up and down irregularly’?","options":["decline","remain","fluctuate","predict"],"answer":2,"explanation":"Fluctuate = dao động."},
+          {"id":"i05-b","type":"fill","skill":"grammar","prompt":"___ the cost was high, the project continued.","answer":"although","explanation":"Although nối hai ý tương phản."},
+          {"id":"i05-c","type":"short","skill":"writing","prompt":"Viết một câu so sánh việc học online và tại lớp, dùng whereas.","sample":"Online learning is flexible, whereas classroom learning offers more direct interaction."}
+        ]
+      },
+      {
+        "id":"ielts-06","week":2,"day":1,"title":"Vocabulary: Education & Work","skill":"vocabulary","minutes":25,"level":"A2-B2","reason":"Chủ đề phổ biến trong cả IELTS Reading và Writing.",
+        "activities":[
+          {"id":"i06-a","type":"flashcards","title":"Academic collocations","cards":[["acquire skills","tiếp thu kỹ năng"],["career prospects","triển vọng nghề nghiệp"],["higher education","giáo dục đại học"],["practical experience","kinh nghiệm thực tế"]]},
+          {"id":"i06-b","type":"mcq","skill":"vocabulary","prompt":"Internships help students gain ___.","options":["practical experience","academic tuition","career salary","higher skill"],"answer":0,"explanation":"Gain practical experience là collocation tự nhiên."}
+        ]
+      },
+      {
+        "id":"ielts-07","week":2,"day":2,"title":"Reading: Locate evidence","skill":"reading","minutes":30,"level":"B1-B2","reason":"Rèn kỹ năng tìm bằng chứng thay vì đoán theo kiến thức cá nhân.",
+        "activities":[
+          {"id":"i07-a","type":"reading","skill":"reading","passage":"A four-day workweek trial involved 61 companies. Most reported stable or improved productivity, while employees described lower stress. However, researchers noted that customer-facing teams needed more flexible schedules than office-based teams.","prompt":"Which statement is supported by the passage?","options":["Every company increased profit","All teams used the same schedule","Many employees felt less stressed","The trial lasted four days"],"answer":2,"explanation":"Lower stress được nêu trực tiếp trong câu thứ hai."},
+          {"id":"i07-b","type":"mcq","skill":"reading","prompt":"Why did customer-facing teams need flexibility?","options":["Their work depends on service coverage","They had fewer employees","They disliked the trial","Their productivity fell"],"answer":0,"explanation":"Đây là suy luận trực tiếp từ customer-facing và flexible schedules."}
+        ]
+      },
+      {
+        "id":"ielts-08","week":2,"day":3,"title":"Grammar: Hedging claims","skill":"grammar","minutes":25,"level":"B1-B2","reason":"Giúp lập luận học thuật chính xác, tránh khẳng định tuyệt đối.",
+        "activities":[
+          {"id":"i08-a","type":"mcq","skill":"grammar","prompt":"Choose the most appropriately cautious claim.","options":["Technology always improves education.","Technology may improve access to education.","Technology proves education is easy.","Technology never causes problems."],"answer":1,"explanation":"May thể hiện mức độ chắc chắn phù hợp với lập luận học thuật."},
+          {"id":"i08-b","type":"reorder","skill":"grammar","prompt":"Sắp xếp câu hedging.","words":["This","could","partly explain","the difference","."],"answer":"This could partly explain the difference."}
+        ]
+      },
+      {
+        "id":"ielts-09","week":2,"day":4,"title":"Writing Task 2: One strong paragraph","skill":"writing","minutes":35,"level":"B1-B2","reason":"Luyện topic sentence, explanation và example trong một đơn vị nhỏ.",
+        "activities":[
+          {"id":"i09-a","type":"mcq","skill":"writing","prompt":"Thứ tự đoạn body hợp lý nhất?","options":["Example → topic sentence → explanation","Topic sentence → explanation → example","Conclusion → question → example","Detail → title → overview"],"answer":1,"explanation":"Đoạn body rõ ràng thường đi từ luận điểm đến giải thích và minh hoạ."},
+          {"id":"i09-b","type":"writing","skill":"writing","title":"Body paragraph","prompt":"Some people believe university education should be free. Viết một đoạn 80–120 từ ủng hộ hoặc phản đối, có topic sentence, explanation và example.","minWords":80,"rubric":"taskResponse,coherence,lexicalResource,grammar"}
+        ]
+      },
+      {
+        "id":"ielts-10","week":2,"day":5,"title":"Mini mock & weekly reflection","skill":"mixed","minutes":35,"level":"A2-B2","reason":"Đo tiến bộ và tạo dữ liệu để điều chỉnh tuần tiếp theo.",
+        "activities":[
+          {"id":"i10-a","type":"mcq","skill":"reading","prompt":"Skimming is mainly used to:","options":["translate every word","find the overall idea","memorise spelling","check grammar"],"answer":1,"explanation":"Skimming giúp nắm ý tổng quát nhanh."},
+          {"id":"i10-b","type":"fill","skill":"vocabulary","prompt":"The percentage fell slowly; it showed a ___ decline.","answer":"gradual","explanation":"Gradual là tính từ bổ nghĩa cho decline."},
+          {"id":"i10-c","type":"short","skill":"writing","prompt":"Nêu một kỹ năng bạn muốn cải thiện tuần tới và lý do.","sample":"I want to improve reading because I still spend too long locating evidence."}
+        ]
+      }
+    ],
+    "communication": [
+      {
+        "id":"comm-01","week":1,"day":1,"title":"Introduce yourself naturally","skill":"speaking","minutes":20,"level":"A1-B1","reason":"Tạo phản xạ cho cuộc hội thoại đầu tiên.",
+        "activities":[
+          {"id":"c01-a","type":"flashcards","title":"Useful chunks","cards":[["I’m originally from…","Tôi quê ở…"],["I’m currently working as…","Hiện tôi làm…"],["In my free time…","Khi rảnh…"]]},
+          {"id":"c01-b","type":"reorder","skill":"speaking","prompt":"Sắp xếp câu giới thiệu.","words":["I’m","currently","working as","a designer","."],"answer":"I’m currently working as a designer."},
+          {"id":"c01-c","type":"short","skill":"speaking","prompt":"Viết lời giới thiệu 2–3 câu về bản thân.","sample":"Hi, I’m Minh. I’m from Da Nang and I’m currently working as a developer."}
+        ]
+      },
+      {
+        "id":"comm-02","week":1,"day":2,"title":"Keep a conversation going","skill":"speaking","minutes":20,"level":"A1-B1","reason":"Câu hỏi nối tiếp giúp hội thoại không kết thúc sớm.",
+        "activities":[
+          {"id":"c02-a","type":"mcq","skill":"speaking","prompt":"Someone says: “I went hiking last weekend.” Best follow-up?","options":["Yes.","Where did you go?","I am hiking.","No, thanks."],"answer":1,"explanation":"Câu hỏi mở giúp người kia chia sẻ thêm."},
+          {"id":"c02-b","type":"fill","skill":"grammar","prompt":"How long ___ you lived here?","answer":"have","explanation":"Present perfect hỏi trải nghiệm kéo dài đến hiện tại."}
+        ]
+      },
+      {
+        "id":"comm-03","week":1,"day":3,"title":"Listening: Key information","skill":"listening","minutes":20,"level":"A1-B1","reason":"Tập trung nghe thông tin cần thiết thay vì từng từ.",
+        "activities":[
+          {"id":"c03-a","type":"listening","skill":"listening","text":"The meeting has moved from room twelve to room twenty, and it will start at three fifteen.","prompt":"Where and when is the meeting?","options":["Room 12 at 3:50","Room 20 at 3:15","Room 20 at 3:50","Room 12 at 3:15"],"answer":1,"explanation":"Thông tin đúng: room twenty, three fifteen."},
+          {"id":"c03-b","type":"mcq","skill":"listening","prompt":"Khi nghe thông tin thực tế, nên ưu tiên điều gì?","options":["Mọi giới từ","Tên, số và thời gian","Dịch từng từ","Ngữ pháp nâng cao"],"answer":1,"explanation":"Tên, số và thời gian thường mang thông tin hành động chính."}
+        ]
+      },
+      {
+        "id":"comm-04","week":1,"day":4,"title":"Ordering food politely","skill":"vocabulary","minutes":20,"level":"A1-A2","reason":"Mẫu câu thiết thực cho đời sống và du lịch.",
+        "activities":[
+          {"id":"c04-a","type":"flashcards","title":"At a restaurant","cards":[["Could I have…?","Cho tôi… được không?"],["I’d like…","Tôi muốn…"],["Could we get the bill?","Cho chúng tôi xin hoá đơn?"]]},
+          {"id":"c04-b","type":"mcq","skill":"speaking","prompt":"Which request sounds most polite?","options":["Give me water.","Water.","Could I have some water, please?","You bring water."],"answer":2,"explanation":"Could I have… please? là cấu trúc lịch sự và tự nhiên."}
+        ]
+      },
+      {
+        "id":"comm-05","week":1,"day":5,"title":"Week 1 role-play","skill":"mixed","minutes":25,"level":"A1-B1","reason":"Kết hợp giới thiệu, hỏi tiếp và yêu cầu lịch sự.",
+        "activities":[
+          {"id":"c05-a","type":"short","skill":"speaking","prompt":"Bạn gặp đồng nghiệp mới. Viết lời chào và một câu hỏi mở.","sample":"Hi, I’m Lan from the product team. What are you working on at the moment?"},
+          {"id":"c05-b","type":"reorder","skill":"grammar","prompt":"Sắp xếp lời mời lịch sự.","words":["Would","you like","to join us","for lunch","?"],"answer":"Would you like to join us for lunch?"}
+        ]
+      },
+      {
+        "id":"comm-06","week":2,"day":1,"title":"Talk about past experiences","skill":"grammar","minutes":20,"level":"A2-B1","reason":"Kể chuyện ngắn là lõi của giao tiếp tự nhiên.",
+        "activities":[
+          {"id":"c06-a","type":"mcq","skill":"grammar","prompt":"I ___ to Singapore twice.","options":["went","have been","am going","go"],"answer":1,"explanation":"Present perfect dùng cho trải nghiệm không nêu thời điểm cụ thể."},
+          {"id":"c06-b","type":"fill","skill":"grammar","prompt":"Last year, I ___ (visit) Bangkok.","answer":"visited","explanation":"Có thời điểm last year nên dùng past simple."}
+        ]
+      },
+      {
+        "id":"comm-07","week":2,"day":2,"title":"Clarify and repair","skill":"speaking","minutes":20,"level":"A2-B1","reason":"Biết yêu cầu giải thích giúp bạn tiếp tục nói dù chưa nghe rõ.",
+        "activities":[
+          {"id":"c07-a","type":"flashcards","title":"Repair phrases","cards":[["Could you say that again?","Bạn có thể nói lại không?"],["What do you mean by…?","Ý bạn về… là gì?"],["Let me rephrase that.","Để tôi nói lại cách khác."]]},
+          {"id":"c07-b","type":"mcq","skill":"speaking","prompt":"You did not hear the final word. What should you say?","options":["Never mind always.","Could you say the last word again?","You are wrong.","Stop speaking."],"answer":1,"explanation":"Yêu cầu cụ thể giúp sửa hội thoại nhanh và lịch sự."}
+        ]
+      },
+      {
+        "id":"comm-08","week":2,"day":3,"title":"Listening & shadowing","skill":"listening","minutes":20,"level":"A2-B1","reason":"Shadowing cải thiện nhịp, nối âm và độ tự nhiên.",
+        "activities":[
+          {"id":"c08-a","type":"listening","skill":"listening","text":"Actually, I was thinking we could move the call to Friday afternoon.","prompt":"Người nói đề xuất điều gì?","options":["Huỷ cuộc gọi","Chuyển cuộc gọi sang chiều thứ Sáu","Gọi ngay hôm nay","Gửi email vào thứ Sáu"],"answer":1,"explanation":"Move the call to Friday afternoon = chuyển lịch cuộc gọi."},
+          {"id":"c08-b","type":"short","skill":"speaking","prompt":"Nghe lại rồi gõ câu bạn vừa shadowing.","sample":"Actually, I was thinking we could move the call to Friday afternoon."}
+        ]
+      },
+      {
+        "id":"comm-09","week":2,"day":4,"title":"AI café conversation","skill":"speaking","minutes":10,"level":"A1-B2","reason":"Thử phản xạ trong hội thoại realtime có ngữ cảnh rõ ràng.",
+        "activities":[
+          {"id":"c09-a","type":"speaking-live","skill":"speaking","title":"Order at a café","scenario":"You are a friendly café barista. Help a Vietnamese learner order a drink and a snack. Keep turns short, ask one question at a time, and gently clarify unclear requests."}
+        ]
+      },
+      {
+        "id":"comm-10","week":2,"day":5,"title":"Conversation checkpoint","skill":"mixed","minutes":25,"level":"A1-B1","reason":"Đo khả năng duy trì hội thoại và chọn trọng tâm tuần tới.",
+        "activities":[
+          {"id":"c10-a","type":"mcq","skill":"speaking","prompt":"Best way to show interest?","options":["Okay.","That sounds interesting. What happened next?","I don’t speak.","Finish now."],"answer":1,"explanation":"Phản hồi + câu hỏi mở duy trì hội thoại."},
+          {"id":"c10-b","type":"fill","skill":"grammar","prompt":"I have worked here ___ 2024.","answer":"since","explanation":"Since đi với mốc thời gian."},
+          {"id":"c10-c","type":"short","skill":"speaking","prompt":"Viết 2 câu về tình huống giao tiếp bạn muốn luyện thêm.","sample":"I want to practise small talk at work. I often run out of follow-up questions."}
+        ]
+      }
+    ]
+  }
+}

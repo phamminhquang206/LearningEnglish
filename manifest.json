@@ -1,0 +1,19 @@
+{
+  "id": "english-learning-assistant",
+  "name": "English Learning Assistant",
+  "short_name": "English AI",
+  "description": "Lộ trình học IELTS và giao tiếp tiếng Anh cá nhân hoá.",
+  "start_url": "./index.html#/today",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#0f766e",
+  "background_color": "#f7faf9",
+  "lang": "vi",
+  "categories": ["education", "productivity"],
+  "icons": [{"src":"./assets/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}],
+  "shortcuts": [
+    {"name":"Học hôm nay","short_name":"Hôm nay","url":"./index.html#/today"},
+    {"name":"Ôn tập","short_name":"Ôn tập","url":"./index.html#/review"}
+  ]
+}

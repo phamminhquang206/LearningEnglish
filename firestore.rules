@@ -1,0 +1,49 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function owns(userId) { return signedIn() && request.auth.uid == userId; }
+    function validPlan() {
+      return request.resource.data.status in ['active', 'archived']
+        && request.resource.data.track in ['ielts', 'communication']
+        && request.resource.data.weekIndex is int
+        && request.resource.data.weekIndex >= 1
+        && request.resource.data.weekIndex <= 2;
+    }
+    function validAttempt() {
+      return request.resource.data.score is number
+        && request.resource.data.score >= 0
+        && request.resource.data.score <= 1
+        && request.resource.data.sessionId is string
+        && request.resource.data.activityId is string;
+    }
+    function validReview() {
+      return request.resource.data.mastery is number
+        && request.resource.data.mastery >= 0
+        && request.resource.data.mastery <= 1
+        && request.resource.data.intervalIndex is int
+        && request.resource.data.intervalIndex >= 0
+        && request.resource.data.intervalIndex <= 2;
+    }
+
+    match /users/{userId} {
+      allow read, create, update: if owns(userId);
+      allow delete: if false;
+
+      match /plans/{planId} { allow read, delete: if owns(userId); allow create, update: if owns(userId) && validPlan(); }
+      match /attempts/{attemptId} { allow read, delete: if owns(userId); allow create, update: if owns(userId) && validAttempt(); }
+      match /reviewItems/{itemId} { allow read, delete: if owns(userId); allow create, update: if owns(userId) && validReview(); }
+      match /studyDays/{dayId} { allow read, write: if owns(userId); }
+      match /speakingSessions/{sessionId} {
+        allow read, delete: if owns(userId);
+        allow create, update: if owns(userId)
+          && !request.resource.data.keys().hasAny(['audio', 'audioUrl', 'apiKey']);
+      }
+      match /settings/{settingId} {
+        allow read, delete: if owns(userId);
+        allow create, update: if owns(userId)
+          && !request.resource.data.keys().hasAny(['apiKey', 'geminiKey', 'secret']);
+      }
+    }
+  }
+}

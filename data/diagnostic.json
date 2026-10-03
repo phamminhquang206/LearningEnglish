@@ -1,0 +1,10 @@
+[
+  {"id":"d1","skill":"grammar","prompt":"She ___ English every evening.","options":["study","studies","studying","studied"],"answer":1},
+  {"id":"d2","skill":"vocabulary","prompt":"Choose the closest meaning of “essential”.","options":["optional","necessary","expensive","unusual"],"answer":1},
+  {"id":"d3","skill":"grammar","prompt":"If I had more time, I ___ another language.","options":["learn","will learn","would learn","learned"],"answer":2},
+  {"id":"d4","skill":"reading","prompt":"“The shop closes at 8, except on Fridays when it remains open until 10.” When does it close on Friday?","options":["8","9","10","It is closed"],"answer":2},
+  {"id":"d5","skill":"vocabulary","prompt":"The project was delayed ___ a shortage of materials.","options":["because","because of","although","despite of"],"answer":1},
+  {"id":"d6","skill":"reading","prompt":"“Remote work can reduce commuting time; however, some workers feel socially isolated.” What contrast is presented?","options":["Time saved vs loneliness","High cost vs low salary","Office size vs travel","Work vs study"],"answer":0},
+  {"id":"d7","skill":"grammar","prompt":"By next June, they ___ the course.","options":["complete","completed","will have completed","are completing yesterday"],"answer":2},
+  {"id":"d8","skill":"vocabulary","prompt":"Choose the natural collocation.","options":["make experience","do progress","gain experience","take progress"],"answer":2}
+]

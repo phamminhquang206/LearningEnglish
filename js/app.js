@@ -11,7 +11,7 @@ const html = (value='') => String(value).replace(/[&<>'"]/g, char => ({'&':'&amp
 const today = () => new Date().toISOString().slice(0,10);
 const skillLabels = { vocabulary:'Từ vựng',grammar:'Ngữ pháp',reading:'Reading',writing:'Writing',listening:'Listening',speaking:'Speaking',mixed:'Tổng hợp' };
 const reasonLabels = { CURRICULUM_CORE:'Nội dung cốt lõi',SELF_REPORTED_WEAK:'Kỹ năng bạn muốn cải thiện',DIAGNOSTIC_GAP:'Khoảng trống từ bài đầu vào',LOW_MASTERY:'Cần củng cố theo kết quả',MISSED_SESSIONS:'Bài chưa hoàn thành',WEEKLY_REBALANCE:'Điều chỉnh cuối tuần' };
-let curriculum, diagnostic, currentUser, currentStep=1, liveService=null, activityStartedAt=0;
+let curriculum, diagnostic, currentUser, currentStep=1, liveService=null, activityStartedAt=0, accountMenuTrigger=null;
 
 function toast(message) {
   const node=document.createElement('div');node.className='toast';node.textContent=message;$('#toast-region').append(node);setTimeout(()=>node.remove(),4200);
@@ -38,7 +38,10 @@ function bindGlobal() {
   $('[name="daysPerWeek"]').addEventListener('input',e=>$('#days-output').value=`${e.target.value} ngày`);
   $$('[name="track"]').forEach(input=>input.addEventListener('change',updateTrackFields));
   window.addEventListener('hashchange',route);window.addEventListener('online',updateNetwork);window.addEventListener('offline',updateNetwork);
-  $('#mobile-theme').addEventListener('click',toggleTheme);
+  document.addEventListener('click',handleAccountMenuClick);
+  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!$('#account-menu').hidden)closeAccountMenu(true)});
+  $('#account-theme').addEventListener('click',()=>{toggleTheme();closeAccountMenu()});
+  $('#account-logout').addEventListener('click',()=>{closeAccountMenu();firebaseService.logout()});
   window.addEventListener('beforeunload',()=>liveService?.stop());document.addEventListener('visibilitychange',()=>{if(document.hidden&&liveService)liveService.stopMicrophone()});
 }
 
@@ -59,7 +62,12 @@ async function handleAuth(user) {
 
 function showOnboarding(){currentStep=1;$('#onboarding-screen').hidden=false;$('#app-shell').hidden=true;renderStep();}
 function showApp(){ $('#onboarding-screen').hidden=true;$('#app-shell').hidden=false;if(!location.hash||location.hash==='#/')location.hash='#/today';route(); }
-function renderProfile(){const p=store.state.profile||{};$('#sidebar-profile').innerHTML=`<div class="profile-row">${p.photoURL?`<img src="${html(p.photoURL)}" alt="">`:`<span class="avatar-fallback">${html((p.displayName||'H')[0])}</span>`}<div><strong>${html(p.displayName||'Học viên')}</strong><small>${html(p.email||'Demo local')}</small></div></div>`;}
+function renderProfile(){const p=store.state.profile||{},name=p.displayName||'Học viên',avatar=p.photoURL?`<img src="${html(p.photoURL)}" alt="">`:`<span class="avatar-fallback">${html(name[0])}</span>`,details=`<div><strong>${html(name)}</strong><small>${html(p.email||'Demo local')}</small></div>`;$('#sidebar-profile').innerHTML=`<button class="profile-trigger" type="button" data-account-trigger aria-haspopup="menu" aria-expanded="false">${avatar}${details}<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>`;$('#mobile-account').innerHTML=avatar;$('#mobile-account').setAttribute('aria-label',`Mở menu tài khoản của ${name}`);$('#account-menu-profile').innerHTML=`${avatar}${details}`;renderAccountTheme();}
+
+function handleAccountMenuClick(event){const trigger=event.target.closest('[data-account-trigger]');if(trigger){event.preventDefault();toggleAccountMenu(trigger);return}if(event.target.closest('[data-account-menu-close]')){closeAccountMenu();return}if(!event.target.closest('#account-menu'))closeAccountMenu();}
+function toggleAccountMenu(trigger){const menu=$('#account-menu'),willOpen=menu.hidden;menu.hidden=!willOpen;accountMenuTrigger=willOpen?trigger:null;$$('[data-account-trigger]').forEach(button=>button.setAttribute('aria-expanded',String(willOpen)));if(willOpen)requestAnimationFrame(()=>menu.querySelector('[role="menuitem"]')?.focus());}
+function closeAccountMenu(restoreFocus=false){const menu=$('#account-menu');if(!menu)return;menu.hidden=true;$$('[data-account-trigger]').forEach(button=>button.setAttribute('aria-expanded','false'));if(restoreFocus)accountMenuTrigger?.focus();accountMenuTrigger=null;}
+function renderAccountTheme(){const button=$('#account-theme');if(!button)return;const dark=document.documentElement.dataset.theme==='dark';button.innerHTML=`${icon(dark?'sun':'moon')}<span>${dark?'Chuyển sang giao diện sáng':'Chuyển sang giao diện tối'}</span>`;}
 
 function renderDiagnostic() {
   $('#diagnostic-questions').innerHTML=diagnostic.map((q,index)=>`<article class="question-card"><fieldset><legend>${index+1}. ${html(q.prompt)}</legend><div class="answer-options">${q.options.map((option,i)=>`<label><input type="radio" name="diagnostic-${q.id}" value="${i}" required><span>${html(option)}</span></label>`).join('')}</div></fieldset></article>`).join('');
@@ -134,8 +142,7 @@ function renderSettings() {
   refreshPwaInstall();
   $('#theme-switch').addEventListener('change',toggleTheme);$('#logout').addEventListener('click',()=>firebaseService.logout());$('#new-goal').addEventListener('click',newGoal);$('#load-models').addEventListener('click',loadModels);$('#save-ai').addEventListener('click',saveAiSettings);
 }
-function toggleTheme(){const theme=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=theme;store.update(s=>s.settings.theme=theme);firebaseService.saveSettings(currentUser.uid,store.state.settings).catch(()=>{});renderThemeIcon();}
-function renderThemeIcon(){$('#mobile-theme').innerHTML=icon(document.documentElement.dataset.theme==='dark'?'sun':'moon')}
+function toggleTheme(){const theme=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=theme;store.update(s=>s.settings.theme=theme);firebaseService.saveSettings(currentUser.uid,store.state.settings).catch(()=>{});renderAccountTheme();}
 async function loadModels(){const keyInput=$('#api-key').value.trim(),key=keyInput&&!keyInput.startsWith('••')?keyInput:geminiService.key,status=$('#ai-status'),button=$('#load-models');button.disabled=true;status.textContent='Đang tải model...';try{const models=await geminiService.listModels(key);$('#model-select').innerHTML=models.map(m=>`<option value="${html(m.id)}" ${m.id===geminiService.model?'selected':''}>${html(m.name)}</option>`).join('');status.textContent=`Đã tìm thấy ${models.length} model hỗ trợ generateContent.`;if(keyInput&&!keyInput.startsWith('••'))$('#api-key').dataset.pendingKey=keyInput}catch(error){status.textContent=error.message}finally{button.disabled=false}}
 function saveAiSettings(){const input=$('#api-key'),pending=input.dataset.pendingKey||(!input.value.startsWith('••')?input.value:'')||geminiService.key,model=$('#model-select').value;if(!pending||!model){$('#ai-status').textContent='Hãy nhập key, tải và chọn model.';return}geminiService.configure(pending,$('#remember-key').checked,model);$('#ai-status').textContent='Đã lưu cấu hình AI trên thiết bị này.';toast('Đã cập nhật Gemini.');}
 async function newGoal(){if(!confirm('Lộ trình hiện tại sẽ được lưu vào lịch sử và bạn sẽ tạo lộ trình mới. Tiếp tục?'))return;store.update(s=>{s.onboardingComplete=false;s.currentPlanId=null});await firebaseService.upsertProfile(currentUser,false,null);$('#app-shell').hidden=true;showOnboarding();}
@@ -184,5 +191,4 @@ function bindLiveEvents(service){service.addEventListener('status',e=>{$('#speak
 
 function registerServiceWorker(){if(!('serviceWorker'in navigator))return;navigator.serviceWorker.register('./sw.js').then(reg=>{reg.addEventListener('updatefound',()=>{const worker=reg.installing;worker?.addEventListener('statechange',()=>{if(worker.state==='installed'&&navigator.serviceWorker.controller)toast('Có phiên bản mới. Tải lại trang để cập nhật.')})})}).catch(()=>{})}
 
-renderThemeIcon();
 init().catch(error=>showAuthError(`Không thể khởi động ứng dụng: ${error.message}`));

@@ -1,4 +1,4 @@
-import { FIREBASE_CONFIG, isFirebaseConfigured } from '../config.js?v=4';
+import { FIREBASE_CONFIG, isFirebaseConfigured } from '../config.js?v=5';
 
 const SDK = 'https://www.gstatic.com/firebasejs/12.4.0';
 class FirebaseService {

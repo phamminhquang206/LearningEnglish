@@ -11,7 +11,7 @@ export const FIREBASE_CONFIG = {
 };
 
 export const FIREBASE_SDK_VERSION = '12.4.0';
-export const CURRICULUM_VERSION = '2026.10-mvp.1';
+export const CURRICULUM_VERSION = '2026.10-roadmap.1';
 export const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 export const GEMINI_LIVE_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
 export const APP_NAME = 'English Learning Assistant';

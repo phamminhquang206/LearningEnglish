@@ -1,6 +1,6 @@
 # English Learning Assistant
 
-PWA học tiếng Anh bằng HTML, CSS và JavaScript thuần. MVP có hai lộ trình 2 tuần: IELTS và giao tiếp cơ bản.
+PWA học tiếng Anh bằng HTML, CSS và JavaScript thuần. Ứng dụng có hai lộ trình IELTS và giao tiếp cơ bản kéo dài tối đa 12 tuần, tự điều chỉnh theo kết quả từng tuần.
 
 ## Chạy thử
 
@@ -49,7 +49,7 @@ npm test
 
 ## Cấu trúc chính
 
-- `data/`: curriculum 20 phiên và diagnostic quiz.
+- `data/`: curriculum nền, nội dung mở rộng 12 tuần và diagnostic quiz.
 - `js/core/`: local store và plan/adaptation engine.
 - `js/services/`: Firebase, Gemini và realtime speaking.
 - `sw.js`: app-shell cache và offline fallback.

@@ -1,8 +1,8 @@
-const CACHE_VERSION = 'ela-shell-v19';
+const CACHE_VERSION = 'ela-shell-v21';
 const STATIC_CACHE = [
-  './','./index.html','./manifest.json','./css/app.css?v=4','./assets/icon.svg?v=2','./assets/icon-180.png?v=2','./assets/icon-192.png?v=2','./assets/icon-512.png?v=2','./assets/icon-maskable-512.png?v=2',
-  './data/curriculum.json','./data/diagnostic.json','./js/app.js?v=17','./js/config.js?v=4',
-  './js/core/store.js?v=2','./js/core/plan-engine.js?v=3','./js/services/firebase.js?v=6',
+  './','./index.html','./manifest.json','./css/app.css?v=5','./assets/icon.svg?v=2','./assets/icon-180.png?v=2','./assets/icon-192.png?v=2','./assets/icon-512.png?v=2','./assets/icon-maskable-512.png?v=2',
+  './data/curriculum.json','./data/roadmap.json','./data/diagnostic.json','./js/app.js?v=19','./js/config.js?v=5',
+  './js/core/store.js?v=2','./js/core/plan-engine.js?v=5','./js/services/firebase.js?v=7',
   './js/services/gemini.js?v=2','./js/services/live-speaking.js?v=2','./js/services/pwa-install.js?v=1','./js/services/pcm-worklet.js'
 ];
 

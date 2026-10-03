@@ -8,7 +8,7 @@ service cloud.firestore {
         && request.resource.data.track in ['ielts', 'communication']
         && request.resource.data.weekIndex is int
         && request.resource.data.weekIndex >= 1
-        && request.resource.data.weekIndex <= 2;
+        && request.resource.data.weekIndex <= 52;
     }
     function validAttempt() {
       return request.resource.data.score is number

@@ -1,4 +1,32 @@
-import { CURRICULUM_VERSION } from '../config.js?v=2';
+import { CURRICULUM_VERSION } from '../config.js?v=5';
+
+export function extendCurriculum(base, roadmap) {
+  const tracks={...base.tracks};
+  for(const track of ['ielts','communication']){
+    const generated=(roadmap.tracks[track]||[]).flatMap(spec=>buildWeekSessions(track,spec));
+    tracks[track]=[...(base.tracks[track]||[]),...generated];
+  }
+  return {...base,version:roadmap.version||base.version,tracks};
+}
+
+function buildWeekSessions(track,spec){
+  const start=(spec.week-1)*5;
+  const make=(day,title,skill,activities,reason)=>({id:`${track==='ielts'?'ielts':'comm'}-${String(start+day).padStart(2,'0')}`,week:spec.week,day,title,skill,minutes:track==='ielts'?35:25,level:spec.week<5?'A2-B1':'B1-B2',phase:spec.phase,reason:reason||`${spec.phase}: ${spec.focus}.`,activities});
+  if(track==='ielts')return[
+    make(1,`Vocabulary: ${spec.focus}`,'vocabulary',[{id:`i${start+1}-a`,type:'flashcards',title:'Academic language',cards:spec.vocab}]),
+    make(2,`Grammar: ${spec.focus}`,'grammar',[{id:`i${start+2}-a`,type:'mcq',skill:'grammar',...spec.grammar}]),
+    make(3,`Reading: ${spec.focus}`,'reading',[{id:`i${start+3}-a`,type:'mcq',skill:'reading',...spec.reading}]),
+    make(4,spec.writing.title,'writing',[{id:`i${start+4}-a`,type:'writing',skill:'writing',...spec.writing}]),
+    make(5,`Checkpoint tuần ${spec.week}`,'mixed',[{id:`i${start+5}-a`,type:'mcq',skill:'mixed',...spec.checkpoint},{id:`i${start+5}-b`,type:'short',skill:'writing',prompt:`Tóm tắt điều bạn đã cải thiện về ${spec.focus} trong tuần này.`,sample:'I improved by reviewing my errors and applying the strategy in a timed task.'}])
+  ];
+  return[
+    make(1,`Useful phrases: ${spec.focus}`,'vocabulary',[{id:`c${start+1}-a`,type:'flashcards',title:'Useful chunks',cards:spec.vocab}]),
+    make(2,`Grammar in conversation`,'grammar',[{id:`c${start+2}-a`,type:'mcq',skill:'grammar',...spec.grammar}]),
+    make(3,`Listening: ${spec.focus}`,'listening',[{id:`c${start+3}-a`,type:'listening',skill:'listening',...spec.listening}]),
+    make(4,spec.speaking.title,'speaking',[{id:`c${start+4}-a`,type:'short',skill:'speaking',...spec.speaking}]),
+    make(5,`Role-play & checkpoint tuần ${spec.week}`,'mixed',[{id:`c${start+5}-a`,type:'mcq',skill:'speaking',...spec.checkpoint},{id:`c${start+5}-b`,type:'short',skill:'speaking',prompt:`Tạo một câu trả lời thực tế dùng ít nhất hai mẫu câu của chủ đề ${spec.focus}.`,sample:spec.speaking.sample}])
+  ];
+}
 
 export function scoreDiagnostic(questions, formData) {
   const bySkill = {};
@@ -18,14 +46,16 @@ export function scoreDiagnostic(questions, formData) {
 export function createPlan({ formData, diagnostic, curriculum }) {
   const track = formData.get('track');
   const weakSkills = formData.getAll('weakSkills');
-  const sessions = curriculum.tracks[track].map((session, index) => {
+  const totalWeeks=goalWeeks(track,formData.get('examDate'),curriculum.tracks[track]);
+  const daysPerWeek=Number(formData.get('daysPerWeek')),selected=selectWeeklySessions(curriculum.tracks[track].filter(session=>session.week<=totalWeeks),track,weakSkills,daysPerWeek);
+  const sessions = selected.map((session, index) => {
     const { activities: _curriculumActivities, ...assignment } = session;
     return {
       ...assignment,
       order: index + 1,
       status: index === 0 ? 'current' : 'upcoming',
       reasonCodes: buildReasonCodes(session, weakSkills, diagnostic),
-      scheduledOffset: Math.floor(index / Math.max(1, Number(formData.get('daysPerWeek')))) * 7 + (index % Number(formData.get('daysPerWeek')))
+      scheduledOffset: (session.week-1)*7+selected.filter(s=>s.week===session.week&&s.day<session.day).length
     };
   });
   const now = new Date();
@@ -41,12 +71,22 @@ export function createPlan({ formData, diagnostic, curriculum }) {
       targetBand: Number(formData.get('targetBand')),
       examDate: formData.get('examDate') || null
     } : { context: formData.get('context') || 'daily' },
-    schedule: { daysPerWeek: Number(formData.get('daysPerWeek')), minutesPerDay: Number(formData.get('minutesPerDay')) },
+    schedule: { daysPerWeek, minutesPerDay: Number(formData.get('minutesPerDay')), coreSessionsPerWeek:Math.min(5,daysPerWeek), reviewDaysPerWeek:Math.max(0,daysPerWeek-5) },
     selfReportedLevel: formData.get('level'), weakSkills, diagnostic,
-    sessions, weekIndex: 1, status: 'active', curriculumVersion: CURRICULUM_VERSION,
+    sessions, weekIndex: 1, totalWeeks, totalSessions:sessions.length, status: 'active', curriculumVersion: CURRICULUM_VERSION,
     adaptations: [], createdAt: now.toISOString(), updatedAt: now.toISOString()
   };
 }
+
+function goalWeeks(track,examDate,sessions){const max=Math.max(...sessions.map(s=>s.week));if(track!=='ielts'||!examDate)return max;const remaining=Math.ceil((new Date(examDate)-new Date())/604800000);return Math.max(4,Math.min(max,Number.isFinite(remaining)?remaining:max));}
+function selectWeeklySessions(sessions,track,weakSkills,daysPerWeek){const count=Math.min(5,Math.max(3,daysPerWeek)),core=track==='ielts'?['writing','reading','mixed']:['speaking','listening','mixed'];return [...new Set(sessions.map(s=>s.week))].flatMap(week=>sessions.filter(s=>s.week===week).sort((a,b)=>(weakSkills.includes(b.skill)?3:0)+(core.includes(b.skill)?2:0)-(weakSkills.includes(a.skill)?3:0)-(core.includes(a.skill)?2:0)||a.day-b.day).slice(0,count).sort((a,b)=>a.day-b.day));}
+
+export function upgradePlan(plan,curriculum){
+  const source=curriculum.tracks[plan.track]||[],totalWeeks=plan.totalWeeks||goalWeeks(plan.track,plan.goal?.examDate,source),eligible=selectWeeklySessions(source.filter(s=>s.week<=totalWeeks),plan.track,plan.weakSkills||[],plan.schedule?.daysPerWeek||5),existing=new Set(plan.sessions.map(s=>s.id));let changed=false;
+  eligible.filter(s=>!existing.has(s.id)).forEach(session=>{const{activities:_activities,...assignment}=session,weekPosition=eligible.filter(s=>s.week===session.week&&s.day<session.day).length,offset=(session.week-1)*7+weekPosition;plan.sessions.push({...assignment,order:plan.sessions.length+1,status:'upcoming',reasonCodes:buildReasonCodes(session,plan.weakSkills||[],plan.diagnostic||{bySkill:{}}),scheduledOffset:offset,scheduledDate:addDays(plan.createdAt,offset)});changed=true});
+  plan.totalWeeks=totalWeeks;plan.totalSessions=plan.sessions.length;if(changed){plan.curriculumVersion=CURRICULUM_VERSION;plan.updatedAt=new Date().toISOString()}return changed;
+}
+function addDays(start,offset){const date=new Date(start||Date.now());date.setDate(date.getDate()+offset);return date.toISOString().slice(0,10)}
 
 function buildReasonCodes(session, weakSkills, diagnostic) {
   const codes = ['CURRICULUM_CORE'];
@@ -56,8 +96,9 @@ function buildReasonCodes(session, weakSkills, diagnostic) {
   return codes;
 }
 
-export function adaptNextWeek(plan, attempts) {
-  const weekOneIds = new Set(plan.sessions.filter(s => s.week === 1).map(s => s.id));
+export function adaptNextWeek(plan, attempts, completedWeek=plan.weekIndex||1) {
+  const targetWeek=Math.min(completedWeek+1,plan.totalWeeks||Math.max(...plan.sessions.map(s=>s.week)));
+  const weekOneIds = new Set(plan.sessions.filter(s => s.week === completedWeek).map(s => s.id));
   const relevant = attempts.filter(a => weekOneIds.has(a.sessionId) && !a.sessionComplete);
   const skillMap = {};
   relevant.forEach(a => {
@@ -66,12 +107,12 @@ export function adaptNextWeek(plan, attempts) {
   });
   const mastery = Object.fromEntries(Object.entries(skillMap).map(([skill, data]) => [skill, Math.round((data.points / data.count) * 100)]));
   const completed = new Set(attempts.filter(a => a.sessionComplete).map(a => a.sessionId));
-  const missed = plan.sessions.filter(s => s.week === 1 && !completed.has(s.id)).map(s => s.id);
+  const missed = plan.sessions.filter(s => s.week === completedWeek && !completed.has(s.id)).map(s => s.id);
   const weak = Object.entries(mastery).filter(([, score]) => score < 65).map(([skill]) => skill);
   const reasonCodes = [...(missed.length ? ['MISSED_SESSIONS'] : []), ...(weak.length ? ['LOW_MASTERY'] : []), 'WEEKLY_REBALANCE'];
-  plan.sessions.filter(s => s.week === 2).sort((a, b) => (weak.includes(b.skill) ? 1 : 0) - (weak.includes(a.skill) ? 1 : 0)).forEach((session, index) => { session.order = 6 + index; if (weak.includes(session.skill)) session.reasonCodes = [...new Set([...session.reasonCodes, 'LOW_MASTERY'])]; });
-  const adaptation = { week: 2, mastery, missedSessionIds: missed, prioritySkills: weak, reasonCodes, createdAt: new Date().toISOString() };
-  plan.adaptations.push(adaptation); plan.weekIndex = 2; plan.updatedAt = adaptation.createdAt;
+  plan.sessions.filter(s => s.week === targetWeek).forEach(session => { if (weak.includes(session.skill)) session.reasonCodes = [...new Set([...session.reasonCodes, 'LOW_MASTERY'])]; });
+  const adaptation = { week: targetWeek, fromWeek:completedWeek, mastery, missedSessionIds: missed, prioritySkills: weak, reasonCodes, createdAt: new Date().toISOString() };
+  plan.adaptations.push(adaptation); plan.weekIndex = targetWeek; plan.updatedAt = adaptation.createdAt;
   return adaptation;
 }
 

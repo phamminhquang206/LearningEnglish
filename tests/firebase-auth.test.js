@@ -7,8 +7,8 @@ test('Samsung Internet uses popup to avoid partitioned redirect storage', () => 
   assert.equal(chooseAuthFlow({ userAgent, mobile: true }), 'popup');
 });
 
-test('regular mobile browser keeps redirect flow', () => {
-  assert.equal(chooseAuthFlow({ userAgent: 'Android Chrome Mobile', mobile: true }), 'redirect');
+test('regular mobile browser uses popup on static hosting', () => {
+  assert.equal(chooseAuthFlow({ userAgent: 'Android Chrome Mobile', mobile: true }), 'popup');
 });
 
 test('standalone PWA and desktop use popup flow', () => {

@@ -1,4 +1,4 @@
-import { firebaseService } from './services/firebase.js?v=4';
+import { firebaseService } from './services/firebase.js?v=5';
 import { geminiService } from './services/gemini.js?v=2';
 import { LiveSpeakingService } from './services/live-speaking.js?v=2';
 import { initPwaInstall, refreshPwaInstall } from './services/pwa-install.js?v=1';

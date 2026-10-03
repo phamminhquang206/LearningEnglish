@@ -31,9 +31,7 @@ Manifest sử dụng icon PNG 192px, 512px, maskable 512px và Apple touch icon 
 6. Copy `.firebaserc.example` thành `.firebaserc`, thay project ID.
 7. Deploy rules trước khi dùng production: `firebase deploy --only firestore:rules`.
 
-Ứng dụng dùng Google redirect trên mobile, popup trên desktop và Firestore persistent multi-tab cache. Rules chỉ cho người dùng truy cập subtree của chính `uid`.
-
-Samsung Internet và PWA standalone dùng popup để tránh mất kết quả đăng nhập do storage cross-origin. Khi deploy trên `*.web.app` hoặc custom domain, `authDomain` tự dùng hostname hiện tại. Hãy thêm URI `https://<domain-của-app>/__/auth/handler` vào OAuth 2.0 Web Client > **Authorized redirect URIs** trong Google Cloud Console.
+Ứng dụng dùng Google popup trên cả mobile và desktop để hoạt động ổn định khi deploy bằng GitHub Pages hoặc static host khác. `authDomain` giữ nguyên domain Firebase, vì GitHub Pages không phục vụ endpoint `/__/auth/handler`. Firestore rules chỉ cho người dùng truy cập subtree của chính `uid`.
 
 ## Gemini
 

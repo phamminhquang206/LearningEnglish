@@ -1,11 +1,8 @@
-const runtimeHostname = typeof location === 'undefined' ? '' : location.hostname;
-const localHosts = new Set(['', 'localhost', '127.0.0.1']);
-
 export const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAvSPEg_2i8Y-wv8cLfTvBvT7gmEHe05Ow",
-  // Firebase redirect helpers must share the deployed Hosting origin on
-  // browsers that partition third-party storage (Samsung Internet included).
-  authDomain: localHosts.has(runtimeHostname) ? "englishlearning-c745e.firebaseapp.com" : runtimeHostname,
+  // Keep the Firebase helper domain when the static app is hosted elsewhere
+  // (for example GitHub Pages). Popup auth does not require /__/auth/* on the app host.
+  authDomain: "englishlearning-c745e.firebaseapp.com",
   projectId: "englishlearning-c745e",
   storageBucket: "englishlearning-c745e.firebasestorage.app",
   messagingSenderId: "687230136261",

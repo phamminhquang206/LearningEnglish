@@ -1,4 +1,4 @@
-import { FIREBASE_CONFIG, isFirebaseConfigured } from '../config.js?v=3';
+import { FIREBASE_CONFIG, isFirebaseConfigured } from '../config.js?v=4';
 
 const SDK = 'https://www.gstatic.com/firebasejs/12.4.0';
 class FirebaseService {
@@ -32,20 +32,13 @@ class FirebaseService {
 
   async login() {
     if (this.demo) return this.loginDemo();
-    const { GoogleAuthProvider, signInWithPopup, signInWithRedirect } = this.modules.authMod;
+    const { GoogleAuthProvider, signInWithPopup } = this.modules.authMod;
     const provider = new GoogleAuthProvider(); provider.setCustomParameters({ prompt: 'select_account' });
-    const mobile = matchMedia('(max-width: 700px)').matches || /Android|iPhone|iPad/i.test(navigator.userAgent);
-    const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
-    const authFlow = chooseAuthFlow({ userAgent: navigator.userAgent, mobile, standalone });
     try {
-      // Samsung Internet commonly partitions the redirect helper's storage.
-      // Popup keeps the Firebase credential exchange in the initiating origin.
-      if (authFlow === 'popup') return await signInWithPopup(this.auth, provider);
-      return await signInWithRedirect(this.auth, provider);
+      // Popup is the reliable Firebase option for static hosts such as GitHub
+      // Pages because the app host cannot serve Firebase's /__/auth/handler.
+      return await signInWithPopup(this.auth, provider);
     } catch (error) {
-      if (authFlow === 'popup' && mobile && ['auth/popup-blocked','auth/operation-not-supported-in-this-environment'].includes(error.code)) {
-        return signInWithRedirect(this.auth, provider);
-      }
       throw normalizeAuthError(error);
     }
   }
@@ -98,8 +91,8 @@ class FirebaseService {
 
 export const firebaseService = new FirebaseService();
 
-export function chooseAuthFlow({ userAgent = '', mobile = false, standalone = false } = {}) {
-  return /SamsungBrowser/i.test(userAgent) || standalone || !mobile ? 'popup' : 'redirect';
+export function chooseAuthFlow() {
+  return 'popup';
 }
 
 function normalizeAuthError(error) {

@@ -1,7 +1,7 @@
-const CACHE_VERSION = 'ela-shell-v14';
+const CACHE_VERSION = 'ela-shell-v15';
 const STATIC_CACHE = [
-  './','./index.html','./manifest.json','./css/app.css?v=3','./assets/icon.svg?v=2','./assets/icon-180.png?v=2','./assets/icon-192.png?v=2','./assets/icon-512.png?v=2','./assets/icon-maskable-512.png?v=2',
-  './data/curriculum.json','./data/diagnostic.json','./js/app.js?v=12','./js/config.js?v=4',
+  './','./index.html','./manifest.json','./css/app.css?v=4','./assets/icon.svg?v=2','./assets/icon-180.png?v=2','./assets/icon-192.png?v=2','./assets/icon-512.png?v=2','./assets/icon-maskable-512.png?v=2',
+  './data/curriculum.json','./data/diagnostic.json','./js/app.js?v=13','./js/config.js?v=4',
   './js/core/store.js','./js/core/plan-engine.js?v=3','./js/services/firebase.js?v=5',
   './js/services/gemini.js?v=2','./js/services/live-speaking.js?v=2','./js/services/pwa-install.js?v=1','./js/services/pcm-worklet.js'
 ];

@@ -66,6 +66,7 @@ class FirebaseService {
   async saveReview(uid, review) { return this.set(uid, 'reviewItems', review.id, review); }
   async saveStudyDay(uid, day) { return this.set(uid, 'studyDays', day.date, day); }
   async saveSpeaking(uid, session) { return this.set(uid, 'speakingSessions', session.id, session); }
+  async saveGrammarLesson(uid, lesson) { return this.set(uid, 'grammarLessons', lesson.id, lesson); }
   async saveSettings(uid, settings) { return this.set(uid, 'settings', 'app', settings); }
 
   async migrateLocalState(user, state) {
@@ -76,6 +77,7 @@ class FirebaseService {
       ...Object.values(state.reviewItems || {}).map(review => this.saveReview(user.uid, review)),
       ...Object.values(state.studyDays || {}).map(day => this.saveStudyDay(user.uid, day)),
       ...(state.speakingSessions || []).map(session => this.saveSpeaking(user.uid, session)),
+      ...Object.values(state.grammarLessons || {}).map(lesson => this.saveGrammarLesson(user.uid, lesson)),
       this.saveSettings(user.uid, state.settings || {})
     ];
     await Promise.all(writes);
@@ -91,15 +93,16 @@ class FirebaseService {
   async loadUserData(uid) {
     if (this.demo || !this.db) return null;
     const { doc, getDocFromServer, collection, getDocsFromServer } = this.modules.fs;
-    const [profileSnap, plansSnap, attemptsSnap, reviewsSnap, daysSnap, speakingSnap, settingsSnap] = await Promise.all([
+    const [profileSnap, plansSnap, attemptsSnap, reviewsSnap, daysSnap, speakingSnap, grammarLessonsSnap, settingsSnap] = await Promise.all([
       getDocFromServer(doc(this.db,'users',uid)), getDocsFromServer(collection(this.db,'users',uid,'plans')), getDocsFromServer(collection(this.db,'users',uid,'attempts')),
-      getDocsFromServer(collection(this.db,'users',uid,'reviewItems')), getDocsFromServer(collection(this.db,'users',uid,'studyDays')), getDocsFromServer(collection(this.db,'users',uid,'speakingSessions')), getDocFromServer(doc(this.db,'users',uid,'settings','app'))
+      getDocsFromServer(collection(this.db,'users',uid,'reviewItems')), getDocsFromServer(collection(this.db,'users',uid,'studyDays')), getDocsFromServer(collection(this.db,'users',uid,'speakingSessions')), getDocsFromServer(collection(this.db,'users',uid,'grammarLessons')), getDocFromServer(doc(this.db,'users',uid,'settings','app'))
     ]);
     const plans = Object.fromEntries(plansSnap.docs.map(d => [d.id,deserializePlanFromFirestore(d.data())]));
     const reviewItems = Object.fromEntries(reviewsSnap.docs.map(d => [d.id,d.data()]));
     const studyDays = Object.fromEntries(daysSnap.docs.map(d => [d.id,d.data()]));
+    const grammarLessons = Object.fromEntries(grammarLessonsSnap.docs.map(d => [d.id,d.data()]));
     const profile = profileSnap.exists() ? profileSnap.data() : {};
-    return { plans, attempts: attemptsSnap.docs.map(d=>d.data()), reviewItems, studyDays, speakingSessions: speakingSnap.docs.map(d=>d.data()), settings: settingsSnap.exists()?settingsSnap.data():undefined, onboardingComplete: !!profile.onboardingComplete, currentPlanId: profile.currentPlanId || null, updatedAt: profile.updatedAt?.toDate?.().toISOString?.() || '' };
+    return { plans, attempts: attemptsSnap.docs.map(d=>d.data()), reviewItems, studyDays, speakingSessions: speakingSnap.docs.map(d=>d.data()), grammarLessons, settings: settingsSnap.exists()?settingsSnap.data():undefined, onboardingComplete: !!profile.onboardingComplete, currentPlanId: profile.currentPlanId || null, updatedAt: profile.updatedAt?.toDate?.().toISOString?.() || '' };
   }
 }
 

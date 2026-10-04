@@ -12,6 +12,7 @@ function blankState(uid) {
     reviewItems: {},
     studyDays: {},
     speakingSessions: [],
+    grammarLessons: {},
     settings: { theme: 'light', locale: 'vi', trustedDevice: false },
     updatedAt: new Date().toISOString()
   };

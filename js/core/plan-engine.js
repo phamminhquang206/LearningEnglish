@@ -1,4 +1,5 @@
 import { CURRICULUM_VERSION } from '../config.js?v=5';
+import { assignGrammarPath } from './grammar-engine.js?v=1';
 
 export function extendCurriculum(base, roadmap) {
   const tracks={...base.tracks};
@@ -29,7 +30,7 @@ function buildWeekSessions(track,spec){
 }
 
 export function scoreDiagnostic(questions, formData) {
-  const bySkill = {};
+  const bySkill = {},grammarProfile={failedTopicIds:[],masteredTopicIds:[]};
   let correct = 0;
   questions.forEach(q => {
     const selected = Number(formData.get(`diagnostic-${q.id}`));
@@ -37,13 +38,14 @@ export function scoreDiagnostic(questions, formData) {
     correct += ok ? 1 : 0;
     const skill = bySkill[q.skill] || { correct: 0, total: 0 };
     skill.total += 1; skill.correct += ok ? 1 : 0; bySkill[q.skill] = skill;
+    if(q.skill==='grammar'&&q.grammarTopicId)(ok?grammarProfile.masteredTopicIds:grammarProfile.failedTopicIds).push(q.grammarTopicId);
   });
   const percentage = Math.round((correct / questions.length) * 100);
   const inferredLevel = percentage >= 80 ? 'B2' : percentage >= 58 ? 'B1' : percentage >= 35 ? 'A2' : 'A1';
-  return { correct, total: questions.length, percentage, inferredLevel, bySkill };
+  return { correct, total: questions.length, percentage, inferredLevel, bySkill, grammarProfile };
 }
 
-export function createPlan({ formData, diagnostic, curriculum, professions=[] }) {
+export function createPlan({ formData, diagnostic, curriculum, professions=[], grammarMap=null }) {
   const track = formData.get('track');
   const weakSkills = formData.getAll('weakSkills');
   const industryId=formData.get('industry')||'general';
@@ -59,12 +61,13 @@ export function createPlan({ formData, diagnostic, curriculum, professions=[] })
   const daysPerWeek=Number(formData.get('daysPerWeek')),selected=selectWeeklySessions(curriculum.tracks[track].filter(session=>session.week<=totalWeeks),track,weakSkills,daysPerWeek);
   const professionSessionIds=new Set([...new Set(selected.map(session=>session.week))].map(week=>{
     const weekSessions=selected.filter(session=>session.week===week);
-    return (weekSessions.find(session=>session.skill==='vocabulary')||weekSessions[0]).id;
+    return (weekSessions.find(session=>session.skill==='vocabulary')||weekSessions.find(session=>session.skill!=='grammar'&&!(session.activities||[]).some(activity=>activity.skill==='grammar'))||weekSessions[0]).id;
   }));
   const sessions = selected.map((session, index) => {
     const { activities: _curriculumActivities, ...assignment } = session;
     return {
       ...assignment,
+      containsGrammar:session.skill==='grammar'||(session.activities||[]).some(activity=>activity.skill==='grammar'),
       order: index + 1,
       status: index === 0 ? 'current' : 'upcoming',
       reasonCodes: [...buildReasonCodes(session, weakSkills, diagnostic),...(professionSessionIds.has(session.id)?['PROFESSIONAL_VOCABULARY']:[])],
@@ -77,7 +80,7 @@ export function createPlan({ formData, diagnostic, curriculum, professions=[] })
     const date = new Date(now); date.setDate(now.getDate() + session.scheduledOffset);
     session.scheduledDate = date.toISOString().slice(0, 10);
   });
-  return {
+  const plan={
     id: `plan-${Date.now()}`,
     track,
     goal: track === 'ielts' ? {
@@ -90,6 +93,8 @@ export function createPlan({ formData, diagnostic, curriculum, professions=[] })
     sessions, weekIndex: 1, totalWeeks, totalSessions:sessions.length, status: 'active', curriculumVersion: CURRICULUM_VERSION,
     adaptations: [], createdAt: now.toISOString(), updatedAt: now.toISOString()
   };
+  if(grammarMap)assignGrammarPath(plan,grammarMap);
+  return plan;
 }
 
 export function personalizeSession(session,plan,professions=[]){
@@ -109,13 +114,14 @@ export function personalizeSession(session,plan,professions=[]){
 }
 
 function goalWeeks(track,examDate,sessions){const max=Math.max(...sessions.map(s=>s.week));if(track!=='ielts'||!examDate)return max;const remaining=Math.ceil((new Date(examDate)-new Date())/604800000);return Math.max(4,Math.min(max,Number.isFinite(remaining)?remaining:max));}
-function selectWeeklySessions(sessions,track,weakSkills,daysPerWeek){const count=Math.min(5,Math.max(3,daysPerWeek)),core=track==='ielts'?['writing','reading','mixed']:['speaking','listening','mixed'];return [...new Set(sessions.map(s=>s.week))].flatMap(week=>sessions.filter(s=>s.week===week).sort((a,b)=>(weakSkills.includes(b.skill)?3:0)+(core.includes(b.skill)?2:0)-(weakSkills.includes(a.skill)?3:0)-(core.includes(a.skill)?2:0)||a.day-b.day).slice(0,count).sort((a,b)=>a.day-b.day));}
+function selectWeeklySessions(sessions,track,weakSkills,daysPerWeek){const count=Math.min(5,Math.max(3,daysPerWeek)),core=track==='ielts'?['writing','reading','mixed']:['speaking','listening','mixed'];return [...new Set(sessions.map(s=>s.week))].flatMap(week=>{const weekSessions=sessions.filter(s=>s.week===week),grammar=weekSessions.find(s=>s.skill==='grammar')||weekSessions.find(s=>(s.activities||[]).some(activity=>activity.skill==='grammar')),ranked=weekSessions.sort((a,b)=>(weakSkills.includes(b.skill)?3:0)+(core.includes(b.skill)?2:0)-(weakSkills.includes(a.skill)?3:0)-(core.includes(a.skill)?2:0)||a.day-b.day),unique=[...new Map([grammar,...ranked].filter(Boolean).map(item=>[item.id,item])).values()],picked=unique.slice(0,count);return picked.sort((a,b)=>a.day-b.day)});}
 
-export function upgradePlan(plan,curriculum){
-  const source=curriculum.tracks[plan.track]||[],totalWeeks=plan.totalWeeks||goalWeeks(plan.track,plan.goal?.examDate,source),eligible=selectWeeklySessions(source.filter(s=>s.week<=totalWeeks),plan.track,plan.weakSkills||[],plan.schedule?.daysPerWeek||5),existing=new Set(plan.sessions.map(s=>s.id));let changed=false;
-  const professionIds=new Set([...new Set(eligible.map(session=>session.week))].map(week=>{const weekSessions=eligible.filter(session=>session.week===week);return (weekSessions.find(session=>session.skill==='vocabulary')||weekSessions[0]).id;}));
-  eligible.filter(s=>!existing.has(s.id)).forEach(session=>{const{activities:_activities,...assignment}=session,weekPosition=eligible.filter(s=>s.week===session.week&&s.day<session.day).length,offset=(session.week-1)*7+weekPosition,professionalFocus=professionIds.has(session.id);plan.sessions.push({...assignment,order:plan.sessions.length+1,status:'upcoming',professionalFocus,reasonCodes:[...buildReasonCodes(session,plan.weakSkills||[],plan.diagnostic||{bySkill:{}}),...(professionalFocus&&plan.professionalProfile?['PROFESSIONAL_VOCABULARY']:[])],scheduledOffset:offset,scheduledDate:addDays(plan.createdAt,offset)});changed=true});
-  plan.totalWeeks=totalWeeks;plan.totalSessions=plan.sessions.length;if(changed){plan.curriculumVersion=CURRICULUM_VERSION;plan.updatedAt=new Date().toISOString()}return changed;
+export function upgradePlan(plan,curriculum,grammarMap=null){
+  const source=curriculum.tracks[plan.track]||[],sourceById=new Map(source.map(session=>[session.id,session])),totalWeeks=plan.totalWeeks||goalWeeks(plan.track,plan.goal?.examDate,source),eligible=selectWeeklySessions(source.filter(s=>s.week<=totalWeeks),plan.track,plan.weakSkills||[],plan.schedule?.daysPerWeek||5),existing=new Set(plan.sessions.map(s=>s.id));let changed=false;
+  plan.sessions.forEach(session=>{const original=sourceById.get(session.id),containsGrammar=original?.skill==='grammar'||(original?.activities||[]).some(activity=>activity.skill==='grammar');if(containsGrammar&&!session.containsGrammar){session.containsGrammar=true;changed=true}});
+  const professionIds=new Set([...new Set(eligible.map(session=>session.week))].map(week=>{const weekSessions=eligible.filter(session=>session.week===week);return (weekSessions.find(session=>session.skill==='vocabulary')||weekSessions.find(session=>session.skill!=='grammar'&&!(session.activities||[]).some(activity=>activity.skill==='grammar'))||weekSessions[0]).id;}));
+  eligible.filter(s=>!existing.has(s.id)).forEach(session=>{const{activities:_activities,...assignment}=session,weekPosition=eligible.filter(s=>s.week===session.week&&s.day<session.day).length,offset=(session.week-1)*7+weekPosition,professionalFocus=professionIds.has(session.id),containsGrammar=session.skill==='grammar'||(session.activities||[]).some(activity=>activity.skill==='grammar');plan.sessions.push({...assignment,order:plan.sessions.length+1,status:'upcoming',professionalFocus,containsGrammar,reasonCodes:[...buildReasonCodes(session,plan.weakSkills||[],plan.diagnostic||{bySkill:{}}),...(professionalFocus&&plan.professionalProfile?['PROFESSIONAL_VOCABULARY']:[])],scheduledOffset:offset,scheduledDate:addDays(plan.createdAt,offset)});changed=true});
+  plan.totalWeeks=totalWeeks;plan.totalSessions=plan.sessions.length;if(grammarMap&&assignGrammarPath(plan,grammarMap))changed=true;if(changed){plan.curriculumVersion=CURRICULUM_VERSION;plan.updatedAt=new Date().toISOString()}return changed;
 }
 function addDays(start,offset){const date=new Date(start||Date.now());date.setDate(date.getDate()+offset);return date.toISOString().slice(0,10)}
 

@@ -49,7 +49,7 @@ npm test
 
 ## Cấu trúc chính
 
-- `data/`: curriculum nền, nội dung mở rộng 12 tuần và diagnostic quiz.
+- `data/`: curriculum nền, nội dung mở rộng 12 tuần, diagnostic quiz và Grammar Spine A1–B2.
 - `js/core/`: local store và plan/adaptation engine.
 - `js/services/`: Firebase, Gemini và realtime speaking.
 - `sw.js`: app-shell cache và offline fallback.

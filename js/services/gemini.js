@@ -72,6 +72,23 @@ class GeminiService {
     }finally{clearTimeout(timer)}
   }
 
+  async generateGrammarLesson({topic,learnerContext=''}){
+    if(!this.key||!this.model)throw new Error('Hãy cấu hình Gemini để cá nhân hóa bài grammar.');
+    const prompt=`Bạn là giáo viên tiếng Anh cho người Việt. Hãy tạo một bài học NGUYÊN BẢN dựa trên grammar specification dưới đây; không sao chép nội dung hay bài tập từ sách. Giữ đúng kiến thức, trình độ và prerequisite đã khóa. Cá nhân hóa ví dụ theo hồ sơ người học nhưng không thay đổi grammar objective. Trả JSON thuần theo schema: {"summary":"giải thích tiếng Việt ngắn","form":"công thức","uses":["..."],"examples":[{"sentence":"câu tiếng Anh","meaning":"giải thích tiếng Việt"}],"commonErrors":["sai → đúng"],"exercises":{"mcq":{"prompt":"...","options":["...","...","...","..."],"answer":0,"explanation":"..."},"fill":{"prompt":"...","answer":"...","explanation":"..."},"production":{"prompt":"...","sample":"..."}}}. Yêu cầu: 2-3 uses, đúng 3 examples, tối đa 3 commonErrors, đáp án khách quan không mơ hồ, giải thích bằng tiếng Việt, nội dung vừa màn hình mobile. Grammar specification: ${JSON.stringify({id:topic.id,level:topic.level,title:topic.title,form:topic.form,explanation:topic.explanation,uses:topic.uses,commonErrors:topic.commonErrors})}. Hồ sơ: ${learnerContext||'người học tiếng Anh tổng quát'}.`;
+    let lastError;
+    for(let attempt=0;attempt<2;attempt+=1){try{return this.validateGrammarLesson(await this.generateJson(prompt+(attempt?' Lần trước sai schema; chỉ trả JSON hợp lệ.':'')),topic.id)}catch(error){lastError=error}}
+    throw lastError;
+  }
+
+  validateGrammarLesson(value,topicId){
+    const mcq=value?.exercises?.mcq,fill=value?.exercises?.fill,production=value?.exercises?.production;
+    if(!value||typeof value!=='object'||!String(value.summary||'').trim()||!String(value.form||'').trim())throw new Error('Bài grammar AI thiếu phần giải thích.');
+    if(!Array.isArray(value.uses)||!Array.isArray(value.examples)||!Array.isArray(value.commonErrors))throw new Error('Bài grammar AI không đúng định dạng.');
+    if(!mcq||!Array.isArray(mcq.options)||mcq.options.length!==4||!Number.isInteger(Number(mcq.answer))||Number(mcq.answer)<0||Number(mcq.answer)>3)throw new Error('Câu hỏi grammar AI không hợp lệ.');
+    if(!fill||!String(fill.answer||'').trim()||!production||!String(production.prompt||'').trim())throw new Error('Bài luyện grammar AI chưa đầy đủ.');
+    return{topicId,source:'gemini',summary:String(value.summary),form:String(value.form),uses:value.uses.slice(0,3).map(String),examples:value.examples.slice(0,3).map(item=>({sentence:String(item?.sentence||''),meaning:String(item?.meaning||'')})).filter(item=>item.sentence),commonErrors:value.commonErrors.slice(0,3).map(String),exercises:{mcq:{prompt:String(mcq.prompt||''),options:mcq.options.map(String),answer:Number(mcq.answer),explanation:String(mcq.explanation||'')},fill:{prompt:String(fill.prompt||''),answer:String(fill.answer),explanation:String(fill.explanation||'')},production:{prompt:String(production.prompt),sample:String(production.sample||'')}}};
+  }
+
   async generateJson(text) {
     const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), 30000);
     try {

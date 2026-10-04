@@ -1,10 +1,14 @@
 [
-  {"id":"d1","skill":"grammar","prompt":"She ___ English every evening.","options":["study","studies","studying","studied"],"answer":1},
+  {"id":"d1","skill":"grammar","grammarTopicId":"present-simple","level":"A1","prompt":"She ___ English every evening.","options":["study","studies","studying","studied"],"answer":1},
   {"id":"d2","skill":"vocabulary","prompt":"Choose the closest meaning of “essential”.","options":["optional","necessary","expensive","unusual"],"answer":1},
-  {"id":"d3","skill":"grammar","prompt":"If I had more time, I ___ another language.","options":["learn","will learn","would learn","learned"],"answer":2},
+  {"id":"d3","skill":"grammar","grammarTopicId":"second-conditional","level":"B1","prompt":"If I had more time, I ___ another language.","options":["learn","will learn","would learn","learned"],"answer":2},
   {"id":"d4","skill":"reading","prompt":"“The shop closes at 8, except on Fridays when it remains open until 10.” When does it close on Friday?","options":["8","9","10","It is closed"],"answer":2},
   {"id":"d5","skill":"vocabulary","prompt":"The project was delayed ___ a shortage of materials.","options":["because","because of","although","despite of"],"answer":1},
   {"id":"d6","skill":"reading","prompt":"“Remote work can reduce commuting time; however, some workers feel socially isolated.” What contrast is presented?","options":["Time saved vs loneliness","High cost vs low salary","Office size vs travel","Work vs study"],"answer":0},
-  {"id":"d7","skill":"grammar","prompt":"By next June, they ___ the course.","options":["complete","completed","will have completed","are completing yesterday"],"answer":2},
-  {"id":"d8","skill":"vocabulary","prompt":"Choose the natural collocation.","options":["make experience","do progress","gain experience","take progress"],"answer":2}
+  {"id":"d7","skill":"grammar","grammarTopicId":"future-perfect","level":"B2","prompt":"By next June, they ___ the course.","options":["complete","completed","will have completed","are completing yesterday"],"answer":2},
+  {"id":"d8","skill":"vocabulary","prompt":"Choose the natural collocation.","options":["make experience","do progress","gain experience","take progress"],"answer":2},
+  {"id":"d9","skill":"grammar","grammarTopicId":"present-continuous","level":"A1","prompt":"Please wait a moment. I ___ the figures now.","options":["check","am checking","checks","checked"],"answer":1},
+  {"id":"d10","skill":"grammar","grammarTopicId":"present-perfect-v-past","level":"B1","prompt":"We ___ the issue, and we deployed the fix yesterday.","options":["have resolved","resolve","are resolving last week","were resolve"],"answer":0},
+  {"id":"d11","skill":"grammar","grammarTopicId":"passive-voice","level":"B1","prompt":"The report ___ by the finance team yesterday.","options":["reviewed","was reviewed","has reviewing","is review"],"answer":1},
+  {"id":"d12","skill":"grammar","grammarTopicId":"modal-perfect","level":"B2","prompt":"We ___ the requirement before implementation.","options":["should have clarified","should clarified","must to clarify","have should clarified"],"answer":0}
 ]

@@ -39,6 +39,13 @@ service cloud.firestore {
         allow create, update: if owns(userId)
           && !request.resource.data.keys().hasAny(['audio', 'audioUrl', 'apiKey']);
       }
+      match /grammarLessons/{lessonId} {
+        allow read, delete: if owns(userId);
+        allow create, update: if owns(userId)
+          && request.resource.data.topicId is string
+          && request.resource.data.planId is string
+          && !request.resource.data.keys().hasAny(['apiKey', 'geminiKey', 'secret']);
+      }
       match /settings/{settingId} {
         allow read, delete: if owns(userId);
         allow create, update: if owns(userId)

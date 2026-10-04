@@ -1,4 +1,4 @@
-import { firebaseService, hasCloudLearningData } from './services/firebase.js?v=8';
+import { firebaseService, hasCloudLearningData } from './services/firebase.js?v=9';
 import { geminiService } from './services/gemini.js?v=6';
 import { LiveSpeakingService } from './services/live-speaking.js?v=4';
 import { initPwaInstall, refreshPwaInstall } from './services/pwa-install.js?v=1';

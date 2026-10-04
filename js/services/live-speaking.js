@@ -14,8 +14,10 @@ function resample(input, fromRate, toRate=16000) {
 function pcm16(float32) { const buffer=new ArrayBuffer(float32.length*2),view=new DataView(buffer); float32.forEach((value,i)=>{const s=Math.max(-1,Math.min(1,value));view.setInt16(i*2,s<0?s*0x8000:s*0x7fff,true)});return new Uint8Array(buffer); }
 
 export class LiveSpeakingService extends EventTarget {
-  constructor() { super(); this.socket=null;this.stream=null;this.context=null;this.worklet=null;this.playback=null;this.sources=new Set();this.transcript=[];this.active=false;this.sessionHandle=null;this.reconnects=0;this.timer=null;this.pronunciationRequest=null; }
+  constructor({outputVolume=.35}={}) { super(); this.socket=null;this.stream=null;this.context=null;this.worklet=null;this.captureSink=null;this.playback=null;this.outputGain=null;this.outputVolume=clampVolume(outputVolume);this.sources=new Set();this.transcript=[];this.active=false;this.sessionHandle=null;this.reconnects=0;this.timer=null;this.pronunciationRequest=null; }
   emit(name,detail={}) { this.dispatchEvent(new CustomEvent(name,{detail})); }
+
+  setOutputVolume(value){this.outputVolume=clampVolume(value);if(this.outputGain&&this.playback){this.outputGain.gain.setTargetAtTime(this.outputVolume,this.playback.currentTime,.015)}return this.outputVolume;}
 
   async connect({ apiKey, model, scenario }) {
     if (!apiKey || !model) throw new Error('Cần API key và model hỗ trợ Gemini Live.');
@@ -62,10 +64,11 @@ export class LiveSpeakingService extends EventTarget {
     this.context=new AudioContext();await this.context.audioWorklet.addModule('./js/services/pcm-worklet.js');
     const source=this.context.createMediaStreamSource(this.stream);this.worklet=new AudioWorkletNode(this.context,'pcm-capture');
     this.worklet.port.onmessage=event=>{if(!this.active||this.socket.readyState!==WebSocket.OPEN)return;const samples=resample(event.data,this.context.sampleRate);const peak=samples.reduce((m,v)=>Math.max(m,Math.abs(v)),0);if(peak>.08)this.clearPlayback();this.socket.send(JSON.stringify({realtimeInput:{audio:{data:bytesToBase64(pcm16(samples)),mimeType:'audio/pcm;rate=16000'}}}));};
-    source.connect(this.worklet);this.worklet.connect(this.context.destination);this.emit('status',{state:'listening',message:'Đang nghe — hãy nói tự nhiên'});
+    this.captureSink=this.context.createGain();this.captureSink.gain.value=0;
+    source.connect(this.worklet);this.worklet.connect(this.captureSink);this.captureSink.connect(this.context.destination);this.emit('status',{state:'listening',message:'Đang nghe — hãy nói tự nhiên'});
   }
 
-  stopMicrophone(){this.worklet?.disconnect();this.worklet=null;this.stream?.getTracks().forEach(t=>t.stop());this.stream=null;this.context?.close();this.context=null;if(this.socket?.readyState===WebSocket.OPEN)this.socket.send(JSON.stringify({realtimeInput:{audioStreamEnd:true}}));this.emit('status',{state:'ready',message:'Đã dừng micro'});}
+  stopMicrophone(){this.worklet?.disconnect();this.worklet=null;this.captureSink?.disconnect();this.captureSink=null;this.stream?.getTracks().forEach(t=>t.stop());this.stream=null;this.context?.close();this.context=null;if(this.socket?.readyState===WebSocket.OPEN)this.socket.send(JSON.stringify({realtimeInput:{audioStreamEnd:true}}));this.emit('status',{state:'ready',message:'Đã dừng micro'});}
   async requestPronunciationAssessment(){
     if(!this.active||!this.socket||this.socket.readyState!==WebSocket.OPEN)return '';
     this.stopMicrophone();this.clearPlayback();this.emit('status',{state:'assessing',message:'Đang phân tích phát âm từ audio của phiên nói…'});
@@ -80,7 +83,9 @@ export class LiveSpeakingService extends EventTarget {
   }
   finishPronunciationRequest(){const request=this.pronunciationRequest;if(!request)return;clearTimeout(request.timer);this.pronunciationRequest=null;request.resolve(request.text.trim());}
   async reconnect(){this.reconnects+=1;await new Promise(r=>setTimeout(r,500*this.reconnects));try{await this.openSocket();if(this.stream)await this.startMicrophone();}catch(error){this.emit('error',{message:error.message});}}
-  playAudio(base64){if(!this.playback)this.playback=new AudioContext({sampleRate:24000});const raw=atob(base64),pcm=new Int16Array(raw.length/2);for(let i=0;i<pcm.length;i++)pcm[i]=(raw.charCodeAt(i*2)|(raw.charCodeAt(i*2+1)<<8));const buffer=this.playback.createBuffer(1,pcm.length,24000),channel=buffer.getChannelData(0);for(let i=0;i<pcm.length;i++)channel[i]=pcm[i]/32768;const source=this.playback.createBufferSource();source.buffer=buffer;source.connect(this.playback.destination);this.nextPlay=Math.max(this.nextPlay||0,this.playback.currentTime);source.start(this.nextPlay);this.nextPlay+=buffer.duration;this.sources.add(source);source.onended=()=>this.sources.delete(source);}
+  playAudio(base64){if(!this.playback){this.playback=new AudioContext({sampleRate:24000,latencyHint:'interactive'});this.outputGain=this.playback.createGain();this.outputGain.gain.value=this.outputVolume;this.outputGain.connect(this.playback.destination)}const raw=atob(base64),pcm=new Int16Array(raw.length/2);for(let i=0;i<pcm.length;i++)pcm[i]=(raw.charCodeAt(i*2)|(raw.charCodeAt(i*2+1)<<8));const buffer=this.playback.createBuffer(1,pcm.length,24000),channel=buffer.getChannelData(0);for(let i=0;i<pcm.length;i++)channel[i]=pcm[i]/32768;const source=this.playback.createBufferSource();source.buffer=buffer;source.connect(this.outputGain);this.nextPlay=Math.max(this.nextPlay||0,this.playback.currentTime);source.start(this.nextPlay);this.nextPlay+=buffer.duration;this.sources.add(source);source.onended=()=>this.sources.delete(source);}
   clearPlayback(){this.sources.forEach(source=>{try{source.stop()}catch{}});this.sources.clear();this.nextPlay=this.playback?.currentTime||0;}
-  stop(){clearTimeout(this.timer);this.finishPronunciationRequest();this.active=false;this.stopMicrophone();this.clearPlayback();this.socket?.close(1000,'User ended session');this.socket=null;this.playback?.close();this.playback=null;this.emit('status',{state:'ended',message:'Phiên nói đã kết thúc'});return this.transcript;}
+  stop(){clearTimeout(this.timer);this.finishPronunciationRequest();this.active=false;this.stopMicrophone();this.clearPlayback();this.socket?.close(1000,'User ended session');this.socket=null;this.outputGain?.disconnect();this.outputGain=null;this.playback?.close();this.playback=null;this.emit('status',{state:'ended',message:'Phiên nói đã kết thúc'});return this.transcript;}
 }
+
+function clampVolume(value){const number=Number(value);return Number.isFinite(number)?Math.min(1,Math.max(0,number)):.35;}

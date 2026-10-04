@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import { scoreDiagnostic, createPlan, adaptNextWeek, calculateStreak, extendCurriculum, upgradePlan, personalizeSession } from '../js/core/plan-engine.js';
 import { serializePlanForFirestore, deserializePlanFromFirestore } from '../js/services/firebase.js';
 import { hydrateGrammarSession, grammarMastery, selectGrammarPath } from '../js/core/grammar-engine.js';
+import { expandLearningSession } from '../js/core/lesson-engine.js';
 
 const baseCurriculum=JSON.parse(fs.readFileSync(new URL('../data/curriculum.json',import.meta.url)));
 const roadmap=JSON.parse(fs.readFileSync(new URL('../data/roadmap.json',import.meta.url)));
@@ -106,4 +107,23 @@ test('grammar mastery is tracked per topic instead of only per skill',()=>{
   const attempts=[{grammarTopicId:'passive-voice',activityId:'a',type:'mcq',score:1},{grammarTopicId:'passive-voice',activityId:'b',type:'fill',score:.5},{grammarTopicId:'second-conditional',activityId:'c',type:'mcq',score:1}];
   const result=grammarMastery(attempts,'passive-voice');
   assert.equal(result.score,75);assert.equal(result.status,'review');assert.equal(result.attempts,2);
+});
+
+test('every curriculum session expands into a complete learning loop',()=>{
+  for(const track of ['ielts','communication']){
+    for(const source of curriculum.tracks[track]){
+      const session=expandLearningSession(source);
+      assert.ok(session.activities.length>=7,`${source.id} only has ${session.activities.length} steps`);
+      assert.equal(session.activities[0].type,'lesson-intro');
+      assert.equal(session.activities.at(-1).type,'lesson-recap');
+      assert.equal(new Set(session.activities.map(item=>item.id)).size,session.activities.length,`${source.id} has duplicate activity ids`);
+    }
+  }
+});
+
+test('vocabulary cards become active recall exercises',()=>{
+  const source=curriculum.tracks.ielts.find(session=>session.activities.some(item=>item.type==='flashcards'));
+  const session=expandLearningSession(source),recall=session.activities.filter(item=>item.id.includes('-recall-'));
+  assert.ok(recall.length>=3);
+  assert.ok(recall.every(item=>item.type==='mcq'));
 });

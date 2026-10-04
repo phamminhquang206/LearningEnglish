@@ -136,7 +136,7 @@ function buildReasonCodes(session, weakSkills, diagnostic) {
 export function adaptNextWeek(plan, attempts, completedWeek=plan.weekIndex||1) {
   const targetWeek=Math.min(completedWeek+1,plan.totalWeeks||Math.max(...plan.sessions.map(s=>s.week)));
   const weekOneIds = new Set(plan.sessions.filter(s => s.week === completedWeek).map(s => s.id));
-  const relevant = attempts.filter(a => weekOneIds.has(a.sessionId) && !a.sessionComplete);
+  const relevant = attempts.filter(a => weekOneIds.has(a.sessionId) && !a.sessionComplete && a.scored !== false);
   const skillMap = {};
   relevant.forEach(a => {
     const item = skillMap[a.skill] || { points: 0, count: 0 };
@@ -155,7 +155,7 @@ export function adaptNextWeek(plan, attempts, completedWeek=plan.weekIndex||1) {
 
 export function masteryBySkill(attempts) {
   const buckets = {};
-  attempts.filter(a => a.skill && a.skill !== 'session').forEach(a => {
+  attempts.filter(a => a.skill && a.skill !== 'session' && a.scored !== false).forEach(a => {
     const b = buckets[a.skill] || { total: 0, count: 0 };
     b.total += Number(a.score || 0); b.count += 1; buckets[a.skill] = b;
   });

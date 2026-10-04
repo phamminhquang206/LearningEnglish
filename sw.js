@@ -1,8 +1,8 @@
-const CACHE_VERSION = 'ela-shell-v30';
+const CACHE_VERSION = 'ela-shell-v32';
 const STATIC_CACHE = [
   './','./index.html','./manifest.json','./css/app.css?v=10','./assets/icon.svg?v=2','./assets/icon-180.png?v=2','./assets/icon-192.png?v=2','./assets/icon-512.png?v=2','./assets/icon-maskable-512.png?v=2',
-  './data/curriculum.json','./data/roadmap.json','./data/professions.json','./data/diagnostic.json','./data/grammar-map.json','./js/app.js?v=28','./js/config.js?v=5',
-  './js/core/store.js?v=3','./js/core/plan-engine.js?v=8','./js/core/grammar-engine.js?v=1','./js/core/lesson-engine.js?v=1','./js/services/firebase.js?v=9',
+  './data/curriculum.json','./data/roadmap.json','./data/professions.json','./data/diagnostic.json','./data/grammar-map.json','./js/app.js?v=30','./js/config.js?v=5',
+  './js/core/store.js?v=3','./js/core/plan-engine.js?v=9','./js/core/grammar-engine.js?v=2','./js/core/lesson-engine.js?v=1','./js/core/diagnostic-engine.js?v=1','./js/services/firebase.js?v=9',
   './js/services/gemini.js?v=6','./js/services/live-speaking.js?v=5','./js/services/pwa-install.js?v=1','./js/services/pcm-worklet.js'
 ];
 

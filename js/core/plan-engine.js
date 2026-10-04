@@ -1,5 +1,5 @@
 import { CURRICULUM_VERSION } from '../config.js?v=5';
-import { assignGrammarPath } from './grammar-engine.js?v=1';
+import { assignGrammarPath } from './grammar-engine.js?v=2';
 
 export function extendCurriculum(base, roadmap) {
   const tracks={...base.tracks};
@@ -113,7 +113,7 @@ export function personalizeSession(session,plan,professions=[]){
   return {...session,reason:`${session.reason} Có thêm từ vựng ${profile.industryLabel}${roleContext}.`,activities:[activity,...session.activities]};
 }
 
-function goalWeeks(track,examDate,sessions){const max=Math.max(...sessions.map(s=>s.week));if(track!=='ielts'||!examDate)return max;const remaining=Math.ceil((new Date(examDate)-new Date())/604800000);return Math.max(4,Math.min(max,Number.isFinite(remaining)?remaining:max));}
+function goalWeeks(track,examDate,sessions){return Math.max(...sessions.map(session=>session.week));}
 function selectWeeklySessions(sessions,track,weakSkills,daysPerWeek){const count=Math.min(5,Math.max(3,daysPerWeek)),core=track==='ielts'?['writing','reading','mixed']:['speaking','listening','mixed'];return [...new Set(sessions.map(s=>s.week))].flatMap(week=>{const weekSessions=sessions.filter(s=>s.week===week),grammar=weekSessions.find(s=>s.skill==='grammar')||weekSessions.find(s=>(s.activities||[]).some(activity=>activity.skill==='grammar')),ranked=weekSessions.sort((a,b)=>(weakSkills.includes(b.skill)?3:0)+(core.includes(b.skill)?2:0)-(weakSkills.includes(a.skill)?3:0)-(core.includes(a.skill)?2:0)||a.day-b.day),unique=[...new Map([grammar,...ranked].filter(Boolean).map(item=>[item.id,item])).values()],picked=unique.slice(0,count);return picked.sort((a,b)=>a.day-b.day)});}
 
 export function upgradePlan(plan,curriculum,grammarMap=null){

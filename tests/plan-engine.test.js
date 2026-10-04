@@ -5,12 +5,14 @@ import { scoreDiagnostic, createPlan, adaptNextWeek, calculateStreak, extendCurr
 import { serializePlanForFirestore, deserializePlanFromFirestore } from '../js/services/firebase.js';
 import { hydrateGrammarSession, grammarMastery, selectGrammarPath } from '../js/core/grammar-engine.js';
 import { expandLearningSession } from '../js/core/lesson-engine.js';
+import { selectDiagnosticForm } from '../js/core/diagnostic-engine.js';
 
 const baseCurriculum=JSON.parse(fs.readFileSync(new URL('../data/curriculum.json',import.meta.url)));
 const roadmap=JSON.parse(fs.readFileSync(new URL('../data/roadmap.json',import.meta.url)));
 const professions=JSON.parse(fs.readFileSync(new URL('../data/professions.json',import.meta.url))).industries;
 const curriculum=extendCurriculum(baseCurriculum,roadmap);
-const questions=JSON.parse(fs.readFileSync(new URL('../data/diagnostic.json',import.meta.url)));
+const diagnosticBank=JSON.parse(fs.readFileSync(new URL('../data/diagnostic.json',import.meta.url)));
+const questions=selectDiagnosticForm(diagnosticBank,'ielts',0).questions;
 const grammarMap=JSON.parse(fs.readFileSync(new URL('../data/grammar-map.json',import.meta.url)));
 class FormDataFake { constructor(values){this.values=values} get(key){const value=this.values[key];return Array.isArray(value)?value[0]:value} getAll(key){const value=this.values[key];return value==null?[]:Array.isArray(value)?value:[value]} }
 
@@ -80,18 +82,45 @@ test('streak accepts today and consecutive previous days',()=>{
 
 test('grammar diagnostic records exact knowledge gaps',()=>{
   const values=Object.fromEntries(questions.map(q=>[`diagnostic-${q.id}`,String(q.answer)]));
-  values['diagnostic-d1']='0';
+  const target=questions.find(question=>question.grammarTopicId==='present-simple');
+  values[`diagnostic-${target.id}`]=String((target.answer+1)%target.options.length);
   const score=scoreDiagnostic(questions,new FormDataFake(values));
   assert.ok(score.grammarProfile.failedTopicIds.includes('present-simple'));
   assert.ok(score.grammarProfile.masteredTopicIds.includes('future-perfect'));
 });
 
-test('three-day plans keep one sequenced grammar lesson every week',()=>{
+test('diagnostic bank rotates three goal-specific forms',()=>{
+  for(const track of ['ielts','communication']){
+    const forms=[0,1,2].map(seed=>selectDiagnosticForm(diagnosticBank,track,seed));
+    assert.equal(new Set(forms.map(form=>form.id)).size,3);
+    assert.ok(forms.every(form=>form.questions.length===12));
+    assert.ok(forms.every(form=>form.questions.filter(question=>question.skill==='grammar').length===6));
+  }
+  const communication=selectDiagnosticForm(diagnosticBank,'communication',0);
+  assert.equal(communication.questions.filter(question=>question.skill==='listening'&&question.audioText).length,2);
+  const ielts=selectDiagnosticForm(diagnosticBank,'ielts',0);
+  assert.ok(ielts.questions.some(question=>question.skill==='writing'));
+});
+
+test('three-day plans cover all 24 grammar topics across twelve weeks',()=>{
   const form=new FormDataFake({track:'communication',level:'A2',weakSkills:['speaking'],industry:'general',daysPerWeek:'3',minutesPerDay:'25',context:'work'});
   const plan=createPlan({formData:form,diagnostic:{percentage:48,inferredLevel:'A2',bySkill:{grammar:{correct:2,total:5}},grammarProfile:{failedTopicIds:['present-simple']}},curriculum,professions,grammarMap});
-  assert.equal(plan.grammarPath.length,12);
-  assert.equal(plan.sessions.filter(session=>session.grammarTopicId).length,12);
-  assert.equal(plan.grammarPath[0],'present-simple');
+  const grammarSessions=plan.sessions.filter(session=>session.grammarTopicIds?.length);
+  assert.equal(plan.totalWeeks,12);
+  assert.equal(plan.grammarPath.length,24);
+  assert.equal(grammarSessions.length,12);
+  assert.ok(grammarSessions.every(session=>session.grammarTopicIds.length===2));
+  assert.deepEqual(grammarSessions.flatMap(session=>session.grammarTopicIds),plan.grammarPath);
+  assert.equal(new Set(plan.grammarPath).size,24);
+  assert.deepEqual(plan.grammarPath.slice(0,2),['be-present','present-simple']);
+});
+
+test('IELTS remains a twelve-week plan even when the exam is sooner',()=>{
+  const soon=new Date();soon.setDate(soon.getDate()+14);
+  const form=new FormDataFake({track:'ielts',level:'B1',weakSkills:['writing'],daysPerWeek:'5',minutesPerDay:'25',currentBand:'5',targetBand:'6.5',examDate:soon.toISOString().slice(0,10)});
+  const plan=createPlan({formData:form,diagnostic:{percentage:55,inferredLevel:'B1',bySkill:{}},curriculum,grammarMap});
+  assert.equal(plan.totalWeeks,12);
+  assert.equal(plan.grammarPath.length,24);
 });
 
 test('offline grammar lesson has form meaning use and four learning steps',()=>{
@@ -101,6 +130,13 @@ test('offline grammar lesson has form meaning use and four learning steps',()=>{
   assert.equal(session.activities[0].type,'grammar-concept');
   assert.equal(session.activities[1].type,'mcq');
   assert.ok(session.activities[0].lesson.form);
+});
+
+test('weekly grammar session hydrates two complete topics',()=>{
+  const session=hydrateGrammarSession({id:'grammar-week-1',week:1,skill:'grammar',grammarTopicId:'be-present',grammarTopicIds:['be-present','present-simple'],minutes:25},{track:'communication',professionalProfile:{industryLabel:'Công nghệ'}},grammarMap);
+  assert.equal(session.activities.length,8);
+  assert.equal(session.minutes,35);
+  assert.deepEqual([...new Set(session.activities.map(activity=>activity.grammarTopicId))],['be-present','present-simple']);
 });
 
 test('grammar mastery is tracked per topic instead of only per skill',()=>{

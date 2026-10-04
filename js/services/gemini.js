@@ -33,10 +33,10 @@ class GeminiService {
       .sort((a,b)=>liveConversationScore(b)-liveConversationScore(a));
   }
 
-  async evaluate({ type, prompt, answer, transcript = '' }) {
+  async evaluate({ type, prompt, answer, transcript = '', pronunciationEvidence = '' }) {
     if (!this.key || !this.model) throw new Error('Tính năng này cần API key và model Gemini trong Cài đặt.');
     const instruction = type === 'speaking'
-      ? `Đánh giá transcript hội thoại tiếng Anh của người Việt. Trả về JSON thuần: {"scores":{"fluency":0-9,"grammar":0-9,"vocabulary":0-9,"interaction":0-9},"strengths":["..."],"improvements":["..."],"betterPhrases":["..."]}. Transcript: ${transcript}`
+      ? `Đánh giá phiên hội thoại tiếng Anh của người Việt. Trả về JSON thuần theo schema: {"scores":{"fluency":0-9,"grammar":0-9,"vocabulary":0-9,"interaction":0-9,"pronunciation":0-9 hoặc null},"strengths":["..."],"improvements":["..."],"betterPhrases":["..."],"pronunciation":{"confidence":"high|medium|low|insufficient","summary":"...","observations":[{"issue":"...","evidence":"...","tip":"...","example":"..."}]}}. Chấm fluency, grammar, vocabulary và interaction từ transcript. Riêng pronunciation chỉ được chấm từ phần bằng chứng âm thanh do Live model cung cấp bên dưới; tuyệt đối không suy đoán cách phát âm từ chữ trong transcript. Nếu bằng chứng trống, mơ hồ hoặc nói insufficient thì đặt scores.pronunciation=null, confidence="insufficient", observations=[] và giải thích ngắn trong summary. Tối đa 3 pronunciation observations, ưu tiên trọng âm, âm cuối, nguyên âm/phụ âm và độ dễ hiểu. Transcript: ${transcript}\nBằng chứng phát âm từ Live model: ${pronunciationEvidence||'(không có)'}`
       : `Bạn là giám khảo IELTS thân thiện. Đánh giá câu trả lời theo prompt. Trả về JSON thuần: {"scores":{"task":0-9,"coherence":0-9,"vocabulary":0-9,"grammar":0-9},"summary":"...","strengths":["..."],"improvements":["..."],"rewrite":"..."}. Prompt: ${prompt}\nCâu trả lời: ${answer}`;
     let lastError;
     for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -94,6 +94,15 @@ class GeminiService {
     if (!value || typeof value !== 'object' || !value.scores || !Array.isArray(value.improvements)) throw new Error('Phản hồi AI không đúng định dạng.');
     const keys = type === 'speaking' ? ['fluency','grammar','vocabulary','interaction'] : ['task','coherence','vocabulary','grammar'];
     keys.forEach(key => { const score = Number(value.scores[key]); if (!Number.isFinite(score) || score < 0 || score > 9) throw new Error('Điểm AI không hợp lệ.'); value.scores[key] = score; });
+    if(type==='speaking'){
+      const raw=value.scores.pronunciation;
+      if(raw===null||raw===undefined||raw==='')value.scores.pronunciation=null;
+      else{const score=Number(raw);if(!Number.isFinite(score)||score<0||score>9)throw new Error('Điểm phát âm không hợp lệ.');value.scores.pronunciation=score;}
+      const pronunciation=value.pronunciation&&typeof value.pronunciation==='object'?value.pronunciation:{};
+      const confidence=['high','medium','low','insufficient'].includes(pronunciation.confidence)?pronunciation.confidence:(value.scores.pronunciation===null?'insufficient':'low');
+      value.pronunciation={confidence,summary:String(pronunciation.summary||'Chưa có đủ dữ liệu âm thanh để nhận xét phát âm.'),observations:Array.isArray(pronunciation.observations)?pronunciation.observations.slice(0,3).map(item=>({issue:String(item?.issue||''),evidence:String(item?.evidence||''),tip:String(item?.tip||''),example:String(item?.example||'')})).filter(item=>item.issue||item.tip):[]};
+      if(confidence==='insufficient')value.scores.pronunciation=null;
+    }
     return value;
   }
 

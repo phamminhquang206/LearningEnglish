@@ -14,7 +14,7 @@ function resample(input, fromRate, toRate=16000) {
 function pcm16(float32) { const buffer=new ArrayBuffer(float32.length*2),view=new DataView(buffer); float32.forEach((value,i)=>{const s=Math.max(-1,Math.min(1,value));view.setInt16(i*2,s<0?s*0x8000:s*0x7fff,true)});return new Uint8Array(buffer); }
 
 export class LiveSpeakingService extends EventTarget {
-  constructor() { super(); this.socket=null;this.stream=null;this.context=null;this.worklet=null;this.playback=null;this.sources=new Set();this.transcript=[];this.active=false;this.sessionHandle=null;this.reconnects=0;this.timer=null; }
+  constructor() { super(); this.socket=null;this.stream=null;this.context=null;this.worklet=null;this.playback=null;this.sources=new Set();this.transcript=[];this.active=false;this.sessionHandle=null;this.reconnects=0;this.timer=null;this.pronunciationRequest=null; }
   emit(name,detail={}) { this.dispatchEvent(new CustomEvent(name,{detail})); }
 
   async connect({ apiKey, model, scenario }) {
@@ -29,7 +29,7 @@ export class LiveSpeakingService extends EventTarget {
       let ready=false;
       const timeout=setTimeout(()=>{socket.close();reject(new Error('Hết thời gian kết nối Gemini Live.'));},15000);
       socket.onopen=()=>{
-        const setup={ setup:{ model:this.model, generationConfig:{responseModalities:['AUDIO'],speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:'Kore'}}}},systemInstruction:{parts:[{text:`${this.scenario} Respond in English. Keep each turn under 35 words. Do not reveal reasoning.`}]},inputAudioTranscription:{},outputAudioTranscription:{},realtimeInputConfig:{activityHandling:'START_OF_ACTIVITY_INTERRUPTS'},sessionResumption:{} } };
+        const setup={ setup:{ model:this.model, generationConfig:{responseModalities:['AUDIO'],speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:'Kore'}}}},systemInstruction:{parts:[{text:`${this.scenario} Respond in English. Keep each turn under 35 words. Listen to the learner's actual audio and remember high-confidence pronunciation evidence, including word stress, final sounds, vowel/consonant clarity, and intelligibility. During the conversation, give at most one short pronunciation correction every two or three learner turns so the dialogue stays natural. Never claim a pronunciation issue from transcript text alone. Do not reveal reasoning.`}]},inputAudioTranscription:{},outputAudioTranscription:{},realtimeInputConfig:{activityHandling:'START_OF_ACTIVITY_INTERRUPTS'},sessionResumption:{} } };
         if(this.sessionHandle) setup.setup.sessionResumption={handle:this.sessionHandle};
         socket.send(JSON.stringify(setup));
       };
@@ -49,8 +49,9 @@ export class LiveSpeakingService extends EventTarget {
     const sc=data.serverContent;if(!sc)return;
     if(sc.interrupted)this.clearPlayback();
     if(sc.inputTranscription?.text)this.addTranscript('user',sc.inputTranscription.text);
-    if(sc.outputTranscription?.text)this.addTranscript('ai',sc.outputTranscription.text);
-    (sc.modelTurn?.parts||[]).forEach(part=>{if(part.inlineData?.mimeType?.startsWith('audio/pcm'))this.playAudio(part.inlineData.data)});
+    if(sc.outputTranscription?.text){if(this.pronunciationRequest)this.pronunciationRequest.text+=sc.outputTranscription.text;else this.addTranscript('ai',sc.outputTranscription.text);}
+    (sc.modelTurn?.parts||[]).forEach(part=>{if(part.inlineData?.mimeType?.startsWith('audio/pcm')&&!this.pronunciationRequest)this.playAudio(part.inlineData.data)});
+    if(sc.turnComplete&&this.pronunciationRequest){if(/pronunciation evidence report/i.test(this.pronunciationRequest.text))this.finishPronunciationRequest();else this.pronunciationRequest.text='';}
   }
 
   addTranscript(role,text){const last=this.transcript.at(-1);if(last?.role===role)last.text+=text;else this.transcript.push({role,text});this.emit('transcript',{transcript:this.transcript});}
@@ -65,8 +66,21 @@ export class LiveSpeakingService extends EventTarget {
   }
 
   stopMicrophone(){this.worklet?.disconnect();this.worklet=null;this.stream?.getTracks().forEach(t=>t.stop());this.stream=null;this.context?.close();this.context=null;if(this.socket?.readyState===WebSocket.OPEN)this.socket.send(JSON.stringify({realtimeInput:{audioStreamEnd:true}}));this.emit('status',{state:'ready',message:'Đã dừng micro'});}
+  async requestPronunciationAssessment(){
+    if(!this.active||!this.socket||this.socket.readyState!==WebSocket.OPEN)return '';
+    this.stopMicrophone();this.clearPlayback();this.emit('status',{state:'assessing',message:'Đang phân tích phát âm từ audio của phiên nói…'});
+    await new Promise(resolve=>setTimeout(resolve,600));
+    if(!this.active||!this.socket||this.socket.readyState!==WebSocket.OPEN)return '';
+    return new Promise(resolve=>{
+      const timer=setTimeout(()=>this.finishPronunciationRequest(),20000);
+      this.pronunciationRequest={text:'',resolve,timer};
+      const prompt='The practice is over. Start your response exactly with "Pronunciation evidence report:". Based only on the learner audio you actually heard in this session, provide a compact pronunciation assessment for another evaluator. Include: evidence confidence (high, medium, low, or insufficient), an estimated 0-9 pronunciation score only when evidence is sufficient, strengths, and up to three specific issues. For each issue include the word or phrase heard, the target pronunciation or stress, and one practical drill. Do not infer pronunciation from transcript spelling. If the audio was too short, unclear, or you have no reliable acoustic evidence, say insufficient evidence. Keep the response under 180 words.';
+      this.socket.send(JSON.stringify({clientContent:{turns:[{role:'user',parts:[{text:prompt}]}],turnComplete:true}}));
+    });
+  }
+  finishPronunciationRequest(){const request=this.pronunciationRequest;if(!request)return;clearTimeout(request.timer);this.pronunciationRequest=null;request.resolve(request.text.trim());}
   async reconnect(){this.reconnects+=1;await new Promise(r=>setTimeout(r,500*this.reconnects));try{await this.openSocket();if(this.stream)await this.startMicrophone();}catch(error){this.emit('error',{message:error.message});}}
   playAudio(base64){if(!this.playback)this.playback=new AudioContext({sampleRate:24000});const raw=atob(base64),pcm=new Int16Array(raw.length/2);for(let i=0;i<pcm.length;i++)pcm[i]=(raw.charCodeAt(i*2)|(raw.charCodeAt(i*2+1)<<8));const buffer=this.playback.createBuffer(1,pcm.length,24000),channel=buffer.getChannelData(0);for(let i=0;i<pcm.length;i++)channel[i]=pcm[i]/32768;const source=this.playback.createBufferSource();source.buffer=buffer;source.connect(this.playback.destination);this.nextPlay=Math.max(this.nextPlay||0,this.playback.currentTime);source.start(this.nextPlay);this.nextPlay+=buffer.duration;this.sources.add(source);source.onended=()=>this.sources.delete(source);}
   clearPlayback(){this.sources.forEach(source=>{try{source.stop()}catch{}});this.sources.clear();this.nextPlay=this.playback?.currentTime||0;}
-  stop(){clearTimeout(this.timer);this.active=false;this.stopMicrophone();this.clearPlayback();this.socket?.close(1000,'User ended session');this.socket=null;this.playback?.close();this.playback=null;this.emit('status',{state:'ended',message:'Phiên nói đã kết thúc'});return this.transcript;}
+  stop(){clearTimeout(this.timer);this.finishPronunciationRequest();this.active=false;this.stopMicrophone();this.clearPlayback();this.socket?.close(1000,'User ended session');this.socket=null;this.playback?.close();this.playback=null;this.emit('status',{state:'ended',message:'Phiên nói đã kết thúc'});return this.transcript;}
 }
